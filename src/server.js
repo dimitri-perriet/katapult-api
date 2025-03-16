@@ -1,3 +1,8 @@
+// Vérification des dépendances (uniquement pour l'environnement Vercel)
+if (process.env.VERCEL) {
+  require('./check-dependencies');
+}
+
 // Chargement des variables d'environnement
 require('dotenv').config();
 
