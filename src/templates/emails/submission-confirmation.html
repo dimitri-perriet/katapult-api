@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmation de soumission - Katapult</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .header h1 {
+      color: #2D4EA2;
+      margin-top: 0;
+    }
+    .content {
+      padding: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #777;
+    }
+    .button {
+      display: inline-block;
+      background-color: #2D4EA2;
+      color: white !important;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #2D4EA2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Confirmation de soumission</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour <span class="highlight">{{firstName}}</span>,</p>
+      
+      <p>Nous vous confirmons la bonne réception de votre candidature pour le projet <span class="highlight">"{{projectName}}"</span>.</p>
+      
+      <p>Votre dossier a été enregistré dans notre système et sera examiné par notre équipe dans les prochains jours. Nous reviendrons vers vous dès que possible pour vous informer de la suite du processus.</p>
+      
+      <p>Vous pouvez à tout moment consulter le statut de votre candidature en vous connectant à votre tableau de bord :</p>
+      
+      <div style="text-align: center;">
+        <a href="{{dashboardLink}}" class="button">Accéder à mon tableau de bord</a>
+      </div>
+      
+      <p>Si vous avez des questions ou besoin d'informations complémentaires, n'hésitez pas à nous contacter en répondant simplement à cet email.</p>
+      
+      <p>Merci de votre intérêt pour Katapult et pour votre participation à notre programme d'incubation.</p>
+      
+      <p>Cordialement,<br>L'équipe Katapult</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{year}} Katapult - Tous droits réservés</p>
+      <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
+    </div>
+  </div>
+</body>
+</html> 

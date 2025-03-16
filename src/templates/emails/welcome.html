@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenue sur Katapult</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .header h1 {
+      color: #2D4EA2;
+      margin-top: 0;
+    }
+    .content {
+      padding: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #777;
+    }
+    .button {
+      display: inline-block;
+      background-color: #2D4EA2;
+      color: white !important;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #2D4EA2;
+    }
+    .steps {
+      margin: 20px 0;
+      padding: 0;
+      list-style-type: none;
+    }
+    .steps li {
+      margin-bottom: 15px;
+      padding-left: 30px;
+      position: relative;
+    }
+    .steps li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #2D4EA2;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Bienvenue sur Katapult !</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour <span class="highlight">{{firstName}}</span>,</p>
+      
+      <p>Nous sommes ravis de vous accueillir sur la plateforme Katapult, l'incubateur dédié aux projets de l'Économie Sociale et Solidaire (ESS).</p>
+      
+      <p>Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter et commencer à préparer votre candidature.</p>
+      
+      <p>Voici les prochaines étapes :</p>
+      
+      <ul class="steps">
+        <li>Connectez-vous à votre compte</li>
+        <li>Complétez votre profil</li>
+        <li>Créez une nouvelle candidature</li>
+        <li>Remplissez toutes les sections du formulaire</li>
+        <li>Soumettez votre candidature avant la date limite</li>
+      </ul>
+      
+      <p>Pour commencer, cliquez sur le bouton ci-dessous :</p>
+      
+      <div style="text-align: center;">
+        <a href="{{loginLink}}" class="button">Se connecter</a>
+      </div>
+      
+      <p>Si vous avez des questions ou besoin d'aide concernant votre candidature, n'hésitez pas à nous contacter en répondant simplement à cet email.</p>
+      
+      <p>Nous vous souhaitons beaucoup de succès dans votre projet !</p>
+      
+      <p>Cordialement,<br>L'équipe Katapult</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{year}} Katapult - Tous droits réservés</p>
+      <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
+    </div>
+  </div>
+</body>
+</html> 

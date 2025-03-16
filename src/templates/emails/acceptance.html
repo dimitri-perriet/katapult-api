@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Félicitations ! Votre projet a été sélectionné - Katapult</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .header h1 {
+      color: #4CAF50;
+      margin-top: 0;
+    }
+    .content {
+      padding: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #777;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4CAF50;
+      color: white !important;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    .success-box {
+      background-color: #E8F5E9;
+      border-left: 4px solid #4CAF50;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .next-steps {
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .next-steps h3 {
+      margin-top: 0;
+      color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Félicitations !</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour <span class="highlight">{{firstName}}</span>,</p>
+      
+      <div class="success-box">
+        <p>Nous avons le plaisir de vous informer que votre projet <span class="highlight">"{{projectName}}"</span> a été <strong>sélectionné</strong> pour rejoindre notre programme d'incubation !</p>
+      </div>
+      
+      <p>Après un examen attentif de votre candidature, notre comité de sélection a été impressionné par la qualité de votre projet et son potentiel d'impact dans l'économie sociale et solidaire.</p>
+      
+      {{#if message}}
+      <p>Message personnalisé du comité de sélection :</p>
+      <blockquote style="font-style: italic; border-left: 3px solid #4CAF50; padding-left: 15px;">
+        {{message}}
+      </blockquote>
+      {{/if}}
+      
+      <div class="next-steps">
+        <h3>Prochaines étapes</h3>
+        <ol>
+          <li>Consultez les documents en pièce jointe pour plus d'informations sur le programme.</li>
+          <li>Confirmez votre participation en répondant à cet email.</li>
+          <li>Participez à la réunion d'accueil (vous recevrez bientôt une invitation).</li>
+          <li>Préparez-vous à commencer l'incubation !</li>
+        </ol>
+      </div>
+      
+      <p>Vous pouvez accéder à votre espace personnel pour suivre les prochaines étapes :</p>
+      
+      <div style="text-align: center;">
+        <a href="{{dashboardLink}}" class="button">Accéder à mon tableau de bord</a>
+      </div>
+      
+      <p>Encore toutes nos félicitations ! Nous sommes impatients de vous accompagner dans cette aventure entrepreneuriale.</p>
+      
+      <p>Cordialement,<br>L'équipe Katapult</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{year}} Katapult - Tous droits réservés</p>
+      <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
+    </div>
+  </div>
+</body>
+</html> 

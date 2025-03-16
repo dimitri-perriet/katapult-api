@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rappel : Candidature en attente - Katapult</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .header h1 {
+      color: #FF9800;
+      margin-top: 0;
+    }
+    .content {
+      padding: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #777;
+    }
+    .button {
+      display: inline-block;
+      background-color: #FF9800;
+      color: white !important;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #FF9800;
+    }
+    .alert-box {
+      background-color: #FFF3E0;
+      border-left: 4px solid #FF9800;
+      padding: 15px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Rappel : Candidature en attente</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour <span class="highlight">{{firstName}}</span>,</p>
+      
+      <p>Nous avons remarqué que votre candidature pour le projet <span class="highlight">"{{projectName}}"</span> est toujours en attente de soumission.</p>
+      
+      <div class="alert-box">
+        <p><strong>Important :</strong> Pour que votre projet puisse être évalué par notre comité de sélection, vous devez compléter toutes les sections du formulaire et soumettre votre candidature.</p>
+      </div>
+      
+      <p>La date limite approche ! N'attendez pas le dernier moment pour finaliser votre dossier.</p>
+      
+      <p>Vous pouvez accéder à votre candidature et la compléter en cliquant sur le lien ci-dessous :</p>
+      
+      <div style="text-align: center;">
+        <a href="{{dashboardLink}}" class="button">Compléter ma candidature</a>
+      </div>
+      
+      <p>Si vous rencontrez des difficultés ou avez des questions concernant le processus de candidature, n'hésitez pas à nous contacter. Nous sommes là pour vous aider.</p>
+      
+      <p>Cordialement,<br>L'équipe Katapult</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{year}} Katapult - Tous droits réservés</p>
+      <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
+    </div>
+  </div>
+</body>
+</html> 

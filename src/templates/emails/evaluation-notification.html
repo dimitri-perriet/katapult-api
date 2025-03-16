@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Votre candidature est en cours d'évaluation - Katapult</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .header h1 {
+      color: #673AB7;
+      margin-top: 0;
+    }
+    .content {
+      padding: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #777;
+    }
+    .button {
+      display: inline-block;
+      background-color: #673AB7;
+      color: white !important;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #673AB7;
+    }
+    .info-box {
+      background-color: #EDE7F6;
+      border-left: 4px solid #673AB7;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .timeline {
+      margin: 30px 0;
+      padding: 0;
+      list-style-type: none;
+    }
+    .timeline li {
+      position: relative;
+      padding-left: 30px;
+      margin-bottom: 15px;
+    }
+    .timeline li:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 5px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #673AB7;
+    }
+    .timeline li:after {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 22px;
+      width: 2px;
+      height: calc(100% + 5px);
+      background-color: #673AB7;
+    }
+    .timeline li:last-child:after {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Votre candidature est en cours d'évaluation</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour <span class="highlight">{{firstName}}</span>,</p>
+      
+      <p>Nous vous informons que votre candidature pour le projet <span class="highlight">"{{projectName}}"</span> est maintenant en cours d'évaluation par notre comité de sélection.</p>
+      
+      <div class="info-box">
+        <p><strong>Information :</strong> Votre dossier est actuellement examiné par <span class="highlight">{{evaluatorName}}</span>, membre de notre comité d'évaluation.</p>
+      </div>
+      
+      <p>Voici les prochaines étapes du processus :</p>
+      
+      <ul class="timeline">
+        <li><strong>Évaluation initiale</strong> - Votre dossier est actuellement à cette étape</li>
+        <li><strong>Présélection</strong> - Si votre projet est présélectionné, vous serez invité à un entretien</li>
+        <li><strong>Entretien</strong> - Discussion approfondie sur votre projet et vos besoins</li>
+        <li><strong>Délibération finale</strong> - Décision du comité de sélection</li>
+        <li><strong>Notification</strong> - Vous serez informé de la décision finale par email</li>
+      </ul>
+      
+      <p>Vous pouvez suivre l'avancement de votre candidature en vous connectant à votre tableau de bord :</p>
+      
+      <div style="text-align: center;">
+        <a href="{{dashboardLink}}" class="button">Accéder à mon tableau de bord</a>
+      </div>
+      
+      <p>Si vous avez des questions ou souhaitez apporter des précisions à votre dossier, n'hésitez pas à nous contacter en répondant simplement à cet email.</p>
+      
+      <p>Cordialement,<br>L'équipe Katapult</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{year}} Katapult - Tous droits réservés</p>
+      <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
+    </div>
+  </div>
+</body>
+</html> 

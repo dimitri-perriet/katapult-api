@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Résultat de votre candidature - Katapult</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .header h1 {
+      color: #607D8B;
+      margin-top: 0;
+    }
+    .content {
+      padding: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #777;
+    }
+    .button {
+      display: inline-block;
+      background-color: #607D8B;
+      color: white !important;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #607D8B;
+    }
+    .info-box {
+      background-color: #ECEFF1;
+      border-left: 4px solid #607D8B;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .alternative-options {
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .alternative-options h3 {
+      margin-top: 0;
+      color: #607D8B;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Résultat de votre candidature</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour <span class="highlight">{{firstName}}</span>,</p>
+      
+      <p>Nous vous remercions pour l'intérêt que vous avez porté à notre programme d'incubation et pour le temps consacré à votre candidature pour le projet <span class="highlight">"{{projectName}}"</span>.</p>
+      
+      <div class="info-box">
+        <p>Après un examen attentif de votre dossier, nous regrettons de vous informer que votre projet n'a pas été retenu pour cette promotion.</p>
+      </div>
+      
+      <p>Notre comité de sélection a reçu de nombreuses candidatures de qualité, et le processus de sélection a été particulièrement compétitif cette année.</p>
+      
+      {{#if message}}
+      <p>Message personnalisé du comité de sélection :</p>
+      <blockquote style="font-style: italic; border-left: 3px solid #607D8B; padding-left: 15px;">
+        {{message}}
+      </blockquote>
+      {{/if}}
+      
+      <div class="alternative-options">
+        <h3>Autres possibilités</h3>
+        <p>Même si votre projet n'a pas été retenu pour cette promotion, nous vous encourageons à :</p>
+        <ul>
+          <li>Poursuivre le développement de votre projet</li>
+          <li>Consulter nos ressources en ligne pour les entrepreneurs ESS</li>
+          <li>Participer à nos événements et ateliers ouverts au public</li>
+          <li>Postuler à nouveau lors d'un prochain appel à candidatures, avec un projet plus mûr</li>
+        </ul>
+      </div>
+      
+      <p>Nous restons à votre disposition pour tout complément d'information et vous souhaitons beaucoup de succès dans vos projets futurs.</p>
+      
+      <p>Cordialement,<br>L'équipe Katapult</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{year}} Katapult - Tous droits réservés</p>
+      <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
+    </div>
+  </div>
+</body>
+</html> 
