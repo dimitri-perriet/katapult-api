@@ -36,21 +36,28 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
+// Définition du préfixe /backend pour toutes les routes
+const apiRouter = express.Router();
+app.use('/backend', apiRouter);
+
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/candidatures', candidatureRoutes);
-app.use('/api/evaluations', evaluationRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/monday', mondayRoutes);
+apiRouter.use('/api/auth', authRoutes);
+apiRouter.use('/api/candidatures', candidatureRoutes);
+apiRouter.use('/api/evaluations', evaluationRoutes);
+apiRouter.use('/api/users', userRoutes);
+apiRouter.use('/api/monday', mondayRoutes);
 
 // Route de base
-app.get('/', (req, res) => {
+apiRouter.get('/', (req, res) => {
   res.json({ message: 'Bienvenue sur l\'API Katapult!' });
 });
 
 // Gestion des erreurs 404
 app.use((req, res) => {
-  res.status(404).json({ message: 'Route non trouvée' });
+  res.status(404).json({ 
+    message: 'Route non trouvée',
+    path: req.originalUrl
+  });
 });
 
 // Gestion globale des erreurs
