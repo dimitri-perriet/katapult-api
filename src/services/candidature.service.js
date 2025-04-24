@@ -188,51 +188,43 @@ class CandidatureService {
     
     // Mise à jour des sections complexes (JSON)
     if (updateData.fiche_identite) {
-      const existingData = candidature.fiche_identite || {};
-      dataToUpdate.fiche_identite = { ...existingData, ...updateData.fiche_identite };
+      dataToUpdate.fiche_identite = updateData.fiche_identite;
       // Mise à jour de la section complétée
       this.updateCompletedSection(candidature, 'ficheIdentite', true);
     }
     
     if (updateData.projet_utilite_sociale) {
-      const existingData = candidature.projet_utilite_sociale || {};
-      dataToUpdate.projet_utilite_sociale = { ...existingData, ...updateData.projet_utilite_sociale };
+      dataToUpdate.projet_utilite_sociale = updateData.projet_utilite_sociale;
       this.updateCompletedSection(candidature, 'projetUtiliteSociale', true);
     }
     
     if (updateData.qui_est_concerne) {
-      const existingData = candidature.qui_est_concerne || {};
-      dataToUpdate.qui_est_concerne = { ...existingData, ...updateData.qui_est_concerne };
+      dataToUpdate.qui_est_concerne = updateData.qui_est_concerne;
       this.updateCompletedSection(candidature, 'quiEstConcerne', true);
     }
     
     if (updateData.modele_economique) {
-      const existingData = candidature.modele_economique || {};
-      dataToUpdate.modele_economique = { ...existingData, ...updateData.modele_economique };
+      dataToUpdate.modele_economique = updateData.modele_economique;
       this.updateCompletedSection(candidature, 'modeleEconomique', true);
     }
     
     if (updateData.parties_prenantes) {
-      const existingData = candidature.parties_prenantes || {};
-      dataToUpdate.parties_prenantes = { ...existingData, ...updateData.parties_prenantes };
+      dataToUpdate.parties_prenantes = updateData.parties_prenantes;
       this.updateCompletedSection(candidature, 'partiesPrenantes', true);
     }
     
     if (updateData.equipe_projet) {
-      const existingData = candidature.equipe_projet || {};
-      dataToUpdate.equipe_projet = { ...existingData, ...updateData.equipe_projet };
+      dataToUpdate.equipe_projet = updateData.equipe_projet;
       this.updateCompletedSection(candidature, 'equipeProjet', true);
     }
     
     if (updateData.documents_json) {
-      const existingData = candidature.documents_json || [];
-      dataToUpdate.documents_json = [...existingData, ...updateData.documents_json];
+      dataToUpdate.documents_json = updateData.documents_json;
       this.updateCompletedSection(candidature, 'documents', true);
     }
     
     if (updateData.completed_sections) {
-      const existingData = candidature.completed_sections || {};
-      dataToUpdate.completed_sections = { ...existingData, ...updateData.completed_sections };
+      dataToUpdate.completed_sections = updateData.completed_sections;
     }
     
     // Mise à jour de la candidature
