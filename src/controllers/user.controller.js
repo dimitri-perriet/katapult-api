@@ -307,19 +307,24 @@ exports.getUserCandidatures = async (req, res) => {
     
     // Récupérer les candidatures de l'utilisateur
     const candidatures = await candidatureService.getAllCandidatures(options);
-    
+    console.log(candidatures)
     // Formater les données pour l'affichage
-    const formattedCandidatures = candidatures.map(c => ({
-      id: c.id,
-      projectName: c.project_name || 'Sans nom',
-      sector: c.sector || 'Non spécifié',
-      status: c.status,
-      promotion: c.promotion || 'Non spécifiée',
-      maturityLevel: c.maturity_level,
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
-      submissionDate: c.submission_date
-    }));
+    const formattedCandidatures = candidatures.map(c => {
+      const ficheIdentite = JSON.parse(c.fiche_identite || '{}');
+      const projetUtiliteSociale = JSON.parse(c.projet_utilite_sociale || '{}');
+      
+      return {
+        id: c.id,
+        projectName: ficheIdentite.projectName || 'Sans nom',
+        sector: ficheIdentite.sector || 'Non spécifié',
+        status: c.status,
+        promotion: c.promotion || 'Non spécifiée',
+        maturityLevel: projetUtiliteSociale.maturityLevel,
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        submissionDate: c.submission_date
+      };
+    });
     
     // Compter le nombre total pour la pagination
     const totalOptions = { ...options };

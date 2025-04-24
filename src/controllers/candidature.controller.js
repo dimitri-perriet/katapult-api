@@ -446,7 +446,6 @@ exports.getAllCandidatures = async (req, res) => {
       offset,
       sort: req.query.sort || 'created_at:DESC'
     };
-    
     // Les candidats ne peuvent voir que leurs propres candidatures
     if (req.user.role === 'candidat') {
       options.userId = userId;
