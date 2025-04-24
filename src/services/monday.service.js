@@ -9,6 +9,7 @@ const mondayConfig = {
 };
 
 // Mapper les statuts de candidature vers les valeurs de Monday
+// Les valeurs à droite doivent correspondre aux options de la colonne "Statut" dans votre tableau Monday
 const statusMapping = {
   'brouillon': 'Brouillon',
   'soumise': 'Soumise',
@@ -152,33 +153,41 @@ exports.syncWithMonday = {
       // Préparation des valeurs de colonnes en format JSON
       const columnValues = {};
       
-      // Cartographie des champs itemData vers les noms de colonnes Monday.com
-      if (itemData.status) {
-        columnValues.status = { label: this.mapStatusToMondayStatus(itemData.status) };
+      // Mapping basé sur les colonnes de votre tableau Monday.com
+      
+      // Date réception (date de soumission)
+      if (itemData.submissionDate) {
+        columnValues.date4 = { date: itemData.submissionDate };
       }
       
-      if (itemData.sector) {
-        columnValues.text0 = itemData.sector;
-      }
-      
+      // NOM Prénom PP principal
       if (itemData.porterName) {
         columnValues.text = itemData.porterName;
       }
       
+      // Courte description
+      if (itemData.shortDescription) {
+        columnValues.text9 = itemData.shortDescription;
+      }
+      
+      // Localisation
+      if (itemData.location) {
+        columnValues.text8 = itemData.location;
+      }
+      
+      // Email
       if (itemData.porterEmail) {
         columnValues.email = { email: itemData.porterEmail, text: itemData.porterEmail };
       }
       
-      if (itemData.maturity) {
-        columnValues.text5 = itemData.maturity;
+      // Tel
+      if (itemData.phone) {
+        columnValues.phone = { phone: itemData.phone, countryShortName: "FR" };
       }
       
-      if (itemData.submissionDate) {
-        columnValues.date = { date: itemData.submissionDate };
-      }
-      
-      if (itemData.completionPercentage !== undefined) {
-        columnValues.numbers = itemData.completionPercentage;
+      // Thématique (secteur)
+      if (itemData.sector) {
+        columnValues.text6 = itemData.sector;
       }
       
       // Conversion en JSON stringifié pour l'API Monday
@@ -325,39 +334,35 @@ exports.syncWithMonday = {
       // Extraire les informations de la candidature
       const ficheIdentite = candidature.fiche_identite || {};
       const projetUtiliteSociale = candidature.projet_utilite_sociale || {};
+      const quiEstConcerne = candidature.qui_est_concerne || {};
       
       // Récupérer le nom du projet
       const projectName = ficheIdentite.projectName || 'Projet sans nom';
       
+      // Préparer les données pour Monday.com
+      const mondayData = {
+        name: projectName,
+        shortDescription: projetUtiliteSociale.shortDescription || ficheIdentite.shortDescription || 'Pas de description',
+        porterName: `${user.first_name} ${user.last_name}`,
+        porterEmail: user.email,
+        phone: user.phone || ficheIdentite.contactPhone || '',
+        sector: projetUtiliteSociale.sector || 'Non spécifié',
+        location: ficheIdentite.location || quiEstConcerne.geographicArea || 'Non spécifié',
+        submissionDate: candidature.submission_date ? new Date(candidature.submission_date).toISOString() : null
+      };
+      
       // Déterminer si nous devons créer un nouvel item ou mettre à jour un existant
       if (candidature.monday_item_id) {
         // Mettre à jour l'item existant
-        return await exports.updateItem(
+        return await exports.syncWithMonday.updateItem(
           candidature.monday_item_id,
-          {
-            name: projectName,
-            status: candidature.status,
-            sector: projetUtiliteSociale.sector || 'Non spécifié',
-            porterName: `${user.first_name} ${user.last_name}`,
-            porterEmail: user.email,
-            maturity: projetUtiliteSociale.maturityLevel || 'Non spécifié',
-            submissionDate: candidature.submission_date ? new Date(candidature.submission_date).toISOString() : null,
-            completionPercentage: candidature.getCompletionPercentage ? candidature.getCompletionPercentage() : 0
-          }
+          mondayData
         );
       } else {
         // Créer un nouvel item
-        const mondayItem = await exports.createItem(
+        const mondayItem = await exports.syncWithMonday.createItem(
           projectName,
-          {
-            status: candidature.status,
-            sector: projetUtiliteSociale.sector || 'Non spécifié',
-            porterName: `${user.first_name} ${user.last_name}`,
-            porterEmail: user.email,
-            maturity: projetUtiliteSociale.maturityLevel || 'Non spécifié',
-            submissionDate: candidature.submission_date ? new Date(candidature.submission_date).toISOString() : null,
-            completionPercentage: candidature.getCompletionPercentage ? candidature.getCompletionPercentage() : 0
-          }
+          mondayData
         );
         
         // Mettre à jour la candidature avec l'ID de l'item Monday
@@ -392,4 +397,4 @@ exports.syncWithMonday = {
     
     return statusMapping[status] || 'Brouillon';
   },
-}; 
+};
