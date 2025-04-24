@@ -1,4 +1,5 @@
 const db = require('../../models');
+const mondayService = require('./monday.service'); // Ajout de l'import du service Monday
 
 const { Op } = require('sequelize');
 
@@ -248,7 +249,21 @@ class CandidatureService {
       }
     }
     
-    return this.getCandidatureById(candidatureId, true);
+    // Si le statut a changé, synchroniser avec Monday.com
+    const updatedCandidature = await this.getCandidatureById(candidatureId, true);
+    
+    // Si le statut est passé à soumise, acceptee ou rejetee, synchroniser avec Monday.com
+    if (updateData.status && ['soumise', 'en_evaluation', 'acceptee', 'rejetee', 'présélectionnée'].includes(updateData.status)) {
+      try {
+        console.log(`Synchronisation de la candidature ${candidatureId} avec Monday.com - Statut: ${updateData.status}`);
+        await this.syncCandidatureWithMonday(candidatureId);
+      } catch (error) {
+        console.error(`Erreur lors de la synchronisation de la candidature ${candidatureId} avec Monday.com:`, error);
+        // On continue même si la synchronisation échoue
+      }
+    }
+    
+    return updatedCandidature;
   }
   
   /**
@@ -355,6 +370,30 @@ class CandidatureService {
     await document.destroy();
     return true;
   }
+  
+  /**
+   * Synchroniser une candidature avec Monday.com
+   * @param {number} candidatureId - ID de la candidature
+   * @returns {Promise<boolean>} Résultat de la synchronisation
+   */
+  async syncCandidatureWithMonday(candidatureId) {
+    try {
+      // Utiliser directement la fonction syncCandidature du service Monday
+      // qui gère déjà toute la logique de création/mise à jour
+      const result = await mondayService.syncWithMonday.syncCandidature(candidatureId);
+      
+      if (result) {
+        console.log(`Synchronisation réussie de la candidature ${candidatureId} avec Monday.com`);
+        return true;
+      } else {
+        console.log(`Aucune donnée retournée lors de la synchronisation de la candidature ${candidatureId}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Erreur lors de la synchronisation avec Monday.com:`, error);
+      throw error;
+    }
+  }
 }
 
-module.exports = new CandidatureService(); 
+module.exports = new CandidatureService();

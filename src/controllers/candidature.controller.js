@@ -133,7 +133,7 @@ exports.createCandidature = async (req, res) => {
     // Synchroniser avec Monday.com (optionnel)
     try {
       if (candidature && candidature.id) {
-        await mondayService.syncCandidature(candidature.id);
+        await mondayService.syncWithMonday.syncCandidature(candidature.id);
       }
     } catch (syncError) {
       console.error('Erreur lors de la synchronisation avec Monday.com:', syncError);
@@ -244,7 +244,7 @@ exports.updateCandidature = async (req, res) => {
     // Synchroniser avec Monday.com si nécessaire
     if (['soumise', 'en_cours_evaluation', 'validee', 'rejetee'].includes(updatedCandidature.status)) {
       try {
-        await mondayService.syncCandidature(candidatureId);
+        await mondayService.syncWithMonday.syncCandidature(candidatureId);
       } catch (syncError) {
         console.error('Erreur lors de la synchronisation avec Monday.com:', syncError);
         // On continue même si la synchronisation échoue
@@ -332,7 +332,7 @@ exports.submitCandidature = async (req, res) => {
     
     // Synchroniser avec Monday.com
     try {
-      await mondayService.syncCandidature(candidatureId);
+      await mondayService.syncWithMonday.syncCandidature(candidatureId);
     } catch (syncError) {
       console.error('Erreur lors de la synchronisation avec Monday.com:', syncError);
       // On continue même si la synchronisation échoue
@@ -722,26 +722,10 @@ exports.syncWithMonday = async (candidatureId) => {
       throw new Error('Candidature non trouvée');
     }
     
-    // Synchroniser avec Monday.com
-    let result;
+    // Utiliser directement le service Monday avec la bonne structure
+    return await mondayService.syncWithMonday.syncCandidature(candidatureId);
     
-    // Si la candidature a déjà un ID Monday, mettre à jour l'item
-    if (candidature.monday_item_id) {
-      result = await mondayService.updateItem(candidature);
-    } else {
-      // Sinon, créer un nouvel item
-      const mondayItemId = await mondayService.createItem(candidature);
-      
-      // Mettre à jour la candidature avec l'ID Monday via le service
-      await candidatureService.updateCandidature(candidatureId, {
-        monday_item_id: mondayItemId
-      });
-      
-      result = { mondayItemId };
-    }
-    
-    return result;
   } catch (error) {
     throw new Error(`Erreur lors de la synchronisation avec Monday.com : ${error.message}`);
   }
-}; 
+};
