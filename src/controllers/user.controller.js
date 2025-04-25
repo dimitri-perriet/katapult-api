@@ -307,7 +307,6 @@ exports.getUserCandidatures = async (req, res) => {
     
     // Récupérer les candidatures de l'utilisateur
     const candidatures = await candidatureService.getAllCandidatures(options);
-    console.log(candidatures)
     // Formater les données pour l'affichage
     const formattedCandidatures = candidatures.map(c => {
       const ficheIdentite = JSON.parse(c.fiche_identite || '{}');
