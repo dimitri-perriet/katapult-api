@@ -74,12 +74,26 @@ exports.syncWithMonday = {
           .replace(/"/g, '\\"');
       };
       
+      // Déterminer la région (HN/BN)
+      let region = '';
+      const dpt = (itemData.department || '').trim(); 
+      const normRegions = ['27', '76']; // Départements de l'ex-Haute Normandie
+      
+      if (normRegions.includes(dpt)) {
+        region = 'exHN';
+      } else if (dpt === '14' || dpt === '50' || dpt === '61') {
+        region = 'exBN';
+      } else if (dpt) {
+        region = 'Hors Normandie';
+      }
+      
       // Utiliser uniquement les colonnes qui fonctionnent selon nos tests
       const columnValues = {
         // Colonnes de base (fonctionnent toujours)
         "color_mkqa2y6n": { "index": 1 }, // Date réception
         "color_mkqan19a": { "index": 1 }, // Lieu
         "color_mkqajhfz": { "index": 1 }, // Dpt
+        "color_mkqa1815": { "index": 1 }, // HN/BN (fonctionne selon nos tests)
         
         // Colonnes supplémentaires (testées et fonctionnelles)
         "color_mkqaqx3b": { "index": 1, "text": cleanText(itemData.porterName) }, // NOM Prénom PP principal
@@ -88,7 +102,21 @@ exports.syncWithMonday = {
         "color_mkqak4k4": { "index": 1, "text": cleanText(itemData.porterEmail) } // Email
       };
       
+      // Remplir les valeurs de texte pour les colonnes de statut
+      if (itemData.department) {
+        columnValues.color_mkqajhfz.text = itemData.department; // Dpt
+      }
+      
+      if (region) {
+        columnValues.color_mkqa1815.text = region; // HN/BN
+      }
+      
+      if (itemData.location) {
+        columnValues.color_mkqan19a.text = cleanText(itemData.location); // Lieu
+      }
+      
       console.log('Colonnes utilisées:', Object.keys(columnValues).join(', '));
+      console.log('Valeurs des colonnes:', JSON.stringify(columnValues));
       
       // Échapper correctement les guillemets pour le format attendu par Monday
       const escapedColumnValues = JSON.stringify(columnValues).replace(/"/g, '\\"');
@@ -160,34 +188,62 @@ exports.syncWithMonday = {
       
       console.log(`Tentative de mise à jour de l'item ${itemId} dans Monday.com`);
       
-      // Préparer les valeurs de colonnes exactement comme dans createItem qui fonctionne
-      const columnValues = {
-        // Ajouter les indices de couleur nécessaires pour l'affichage correct
-        "color_mkqa2y6n": { "index": 1 },
-        "color_mkqan19a": { "index": 1 },
-        "color_mkqajhfz": { "index": 1 },
-        
-        // Statut de la candidature (conserver le statut actuel)
-        "status": { "label": "Soumise" },
-        
-        // Colonnes avec les informations du projet
-        "text": itemData.porterName || "", // NOM Prénom PP principal
-        "email": itemData.porterEmail ? { "email": itemData.porterEmail, "text": itemData.porterEmail } : null,
-        "phone": itemData.phone ? { "phone": itemData.phone, "countryShortName": "FR" } : null,
-        "text6": itemData.sector || "", // Thématique (secteur)
-        "text8": itemData.location || "", // Localisation
-        "text9": itemData.shortDescription || "", // Courte description
+      // Fonction pour tronquer et nettoyer les textes longs
+      const cleanText = (text, maxLength = 100) => {
+        if (!text) return "";
+        return String(text).substring(0, maxLength)
+          .replace(/\\/g, "\\\\")
+          .replace(/\n/g, " ")
+          .replace(/\r/g, "")
+          .replace(/\t/g, " ")
+          .replace(/"/g, '\\"');
       };
       
-      // Si la date de soumission est disponible, l'ajouter
-      if (itemData.submissionDate) {
-        columnValues.date4 = { "date": itemData.submissionDate };
+      // Déterminer la région (HN/BN)
+      let region = '';
+      const dpt = (itemData.department || '').trim(); 
+      const normRegions = ['27', '76']; // Départements de l'ex-Haute Normandie
+      
+      if (normRegions.includes(dpt)) {
+        region = 'exHN';
+      } else if (dpt === '14' || dpt === '50' || dpt === '61') {
+        region = 'exBN';
+      } else if (dpt) {
+        region = 'Hors Normandie';
       }
-
+      
+      // Utiliser uniquement les colonnes qui fonctionnent selon nos tests
+      const columnValues = {
+        // Colonnes de base (fonctionnent toujours)
+        "color_mkqa2y6n": { "index": 1 }, // Date réception
+        "color_mkqan19a": { "index": 1 }, // Lieu
+        "color_mkqajhfz": { "index": 1 }, // Dpt
+        "color_mkqa1815": { "index": 1 }, // HN/BN
+        
+        // Colonnes supplémentaires (testées et fonctionnelles)
+        "color_mkqaqx3b": { "index": 1, "text": cleanText(itemData.porterName) }, // NOM Prénom PP principal
+        "color_mkqa9q6e": { "index": 1, "text": cleanText(itemData.shortDescription) }, // Courte description
+        "color_mkqa1qp8": { "index": 1, "text": cleanText(itemData.phone) }, // Tel
+        "color_mkqak4k4": { "index": 1, "text": cleanText(itemData.porterEmail) } // Email
+      };
+      
+      // Remplir les valeurs de texte pour les colonnes de statut
+      if (itemData.department) {
+        columnValues.color_mkqajhfz.text = itemData.department; // Dpt
+      }
+      
+      if (region) {
+        columnValues.color_mkqa1815.text = region; // HN/BN
+      }
+      
+      if (itemData.location) {
+        columnValues.color_mkqan19a.text = cleanText(itemData.location); // Lieu
+      }
+      
       // Le nom du projet est géré par le nom de l'élément, pas par une colonne
       const projectName = itemData.name || "Projet sans nom";
       
-      // Convertir en JSON et échapper les guillemets exactement comme dans le script de test
+      // Échapper correctement les guillemets pour le format attendu par Monday
       const escapedColumnValues = JSON.stringify(columnValues).replace(/"/g, '\\"');
       
       // Utiliser exactement la même structure de requête qui fonctionne
@@ -203,9 +259,10 @@ exports.syncWithMonday = {
         }
       `;
       
-      console.log('Query GraphQL pour mise à jour:', query);
+      console.log('Query GraphQL pour mise à jour:', query.substring(0, 200) + '...');
+      console.log('Colonnes utilisées:', Object.keys(columnValues).join(', '));
       
-      // Faire l'appel à l'API exactement comme dans le script de test
+      // Faire l'appel à l'API
       const response = await axios.post(
         'https://api.monday.com/v2', 
         { query }, 
@@ -512,6 +569,10 @@ exports.syncWithMonday = {
         ? JSON.parse(candidature.projet_utilite_sociale) 
         : candidature.projet_utilite_sociale || {};
       
+      const quiEstConcerne = typeof candidature.qui_est_concerne === 'string' 
+        ? JSON.parse(candidature.qui_est_concerne) 
+        : candidature.qui_est_concerne || {};
+      
       // Récupérer le nom du projet
       const projectName = ficheIdentite.projectName || 'Projet sans nom';
       
@@ -520,6 +581,25 @@ exports.syncWithMonday = {
       if (!shortDescription && projetUtiliteSociale.projectSummary) {
         shortDescription = projetUtiliteSociale.projectSummary.substring(0, 100);
       }
+      
+      // Extraire les informations de localisation
+      const location = ficheIdentite.territory || '';
+      
+      // Extraire le département si disponible
+      let department = '';
+      if (ficheIdentite.postalCode && ficheIdentite.postalCode.length >= 2) {
+        department = ficheIdentite.postalCode.substring(0, 2);
+      } else if (location.includes('(') && location.includes(')')) {
+        const match = location.match(/\((\d{2})\)/);
+        if (match && match[1]) {
+          department = match[1];
+        }
+      }
+      
+      // Extraire la zone d'intervention
+      const interventionZone = ficheIdentite.interventionZone || 
+                              quiEstConcerne.geographicArea || 
+                              '';
       
       // Préparer les données pour Monday.com avec les champs qui fonctionnent
       const mondayData = {
@@ -531,7 +611,9 @@ exports.syncWithMonday = {
         // Détails du projet
         shortDescription: shortDescription || projetUtiliteSociale.projectSummary || 'Pas de description',
         sector: ficheIdentite.sector || projetUtiliteSociale.sector || '',
-        location: ficheIdentite.territory || 'Non spécifié',
+        location: location,
+        department: department,
+        interventionZone: interventionZone,
         
         // Métadonnées
         submissionDate: candidature.submission_date ? new Date(candidature.submission_date).toISOString() : null,
