@@ -475,18 +475,45 @@ exports.getAllCandidatures = async (req, res) => {
     const candidatures = await candidatureService.getAllCandidatures(options);
     
     // Formater les données pour l'affichage
-    const formattedCandidatures = candidatures.map(c => ({
-      id: c.id,
-      projectName: c.project_name || 'Sans nom',
-      sector: c.sector || 'Non spécifié',
-      status: c.status,
-      promotion: c.promotion || 'Non spécifiée',
-      applicant: c.user ? `${c.user.first_name} ${c.user.last_name}` : 'Inconnu',
-      email: c.user ? c.user.email : '',
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
-      submissionDate: c.submission_date
-    }));
+    const formattedCandidatures = candidatures.map(c => {
+      // Extraction du nom du projet et du secteur depuis fiche_identite
+      let projectName = c.project_name;
+      let sector = c.sector;
+      
+      // Si ces champs ne sont pas directement disponibles, on essaie de les extraire de fiche_identite
+      if ((!projectName || projectName === 'Sans nom') && c.fiche_identite) {
+        try {
+          // La fiche d'identité peut être soit un objet soit une chaîne JSON
+          const ficheIdentite = typeof c.fiche_identite === 'string' 
+            ? JSON.parse(c.fiche_identite) 
+            : c.fiche_identite;
+            
+          // Extraire le nom du projet et le secteur
+          if (ficheIdentite.projectName) {
+            projectName = ficheIdentite.projectName;
+          }
+          
+          if (ficheIdentite.sector) {
+            sector = ficheIdentite.sector;
+          }
+        } catch (e) {
+          console.error('Erreur lors du parsing de fiche_identite:', e);
+        }
+      }
+      
+      return {
+        id: c.id,
+        projectName: projectName || 'Sans nom',
+        sector: sector || 'Non spécifié',
+        status: c.status,
+        promotion: c.promotion || 'Non spécifiée',
+        applicant: c.user ? `${c.user.first_name} ${c.user.last_name}` : 'Inconnu',
+        email: c.user ? c.user.email : '',
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        submissionDate: c.submission_date
+      };
+    });
     
     // Compter le nombre total pour la pagination
     const totalOptions = { ...options };
