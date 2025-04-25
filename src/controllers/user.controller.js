@@ -278,6 +278,8 @@ exports.deleteUser = async (req, res) => {
 exports.getUserCandidatures = async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log(`Récupération des candidatures pour l'utilisateur ${userId}`);
+    console.log('Paramètres de requête:', req.query);
     
     // Options de pagination
     const page = parseInt(req.query.page) || 1;
@@ -288,9 +290,23 @@ exports.getUserCandidatures = async (req, res) => {
     const options = {
       userId: userId,
       limit: limit,
-      offset: offset,
-      sort: req.query.sort || 'updated_at:DESC'
+      offset: offset
     };
+    
+    // Gérer le tri - adapter les noms de champs frontend -> backend
+    if (req.query.sort) {
+      // Si le nom de tri vient du frontend (camelCase), le convertir en snake_case pour le backend
+      let sortField = req.query.sort;
+      if (sortField === 'createdAt') sortField = 'created_at';
+      if (sortField === 'updatedAt') sortField = 'updated_at';
+      
+      const order = req.query.order || 'DESC';
+      options.sort = `${sortField}:${order}`;
+    } else {
+      options.sort = 'updated_at:DESC';
+    }
+    
+    console.log('Options de filtrage préparées:', options);
     
     // Ajout des filtres optionnels
     if (req.query.status) {
@@ -305,12 +321,30 @@ exports.getUserCandidatures = async (req, res) => {
       options.search = req.query.search;
     }
     
+    console.log('Appel du service avec options:', options);
+    
     // Récupérer les candidatures de l'utilisateur
     const candidatures = await candidatureService.getAllCandidatures(options);
+    console.log(`${candidatures.length} candidatures trouvées`);
+    
     // Formater les données pour l'affichage
     const formattedCandidatures = candidatures.map(c => {
-      const ficheIdentite = JSON.parse(c.fiche_identite || '{}');
-      const projetUtiliteSociale = JSON.parse(c.projet_utilite_sociale || '{}');
+      let ficheIdentite = {};
+      let projetUtiliteSociale = {};
+      
+      try {
+        ficheIdentite = typeof c.fiche_identite === 'string' && c.fiche_identite ? 
+          JSON.parse(c.fiche_identite) : (c.fiche_identite || {});
+      } catch (e) {
+        console.error('Erreur lors du parsing de fiche_identite:', e);
+      }
+      
+      try {
+        projetUtiliteSociale = typeof c.projet_utilite_sociale === 'string' && c.projet_utilite_sociale ?
+          JSON.parse(c.projet_utilite_sociale) : (c.projet_utilite_sociale || {});
+      } catch (e) {
+        console.error('Erreur lors du parsing de projet_utilite_sociale:', e);
+      }
       
       return {
         id: c.id,
@@ -321,7 +355,13 @@ exports.getUserCandidatures = async (req, res) => {
         maturityLevel: projetUtiliteSociale.maturityLevel,
         createdAt: c.created_at,
         updatedAt: c.updated_at,
-        submissionDate: c.submission_date
+        submissionDate: c.submission_date,
+        user: c.user ? {
+          id: c.user.id,
+          firstName: c.user.first_name,
+          lastName: c.user.last_name,
+          email: c.user.email
+        } : null
       };
     });
     
@@ -331,15 +371,19 @@ exports.getUserCandidatures = async (req, res) => {
     delete totalOptions.offset;
     const totalCandidatures = await candidatureService.getAllCandidatures(totalOptions);
     
-    res.status(200).json({
+    const response = {
       success: true,
       count: candidatures.length,
       total: totalCandidatures.length,
       totalPages: Math.ceil(totalCandidatures.length / limit),
       currentPage: page,
       candidatures: formattedCandidatures
-    });
+    };
+    
+    console.log('Réponse préparée avec succès');
+    res.status(200).json(response);
   } catch (error) {
+    console.error('Erreur dans getUserCandidatures:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des candidatures',

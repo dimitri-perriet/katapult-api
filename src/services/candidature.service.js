@@ -394,6 +394,34 @@ class CandidatureService {
       throw error;
     }
   }
+  
+  /**
+   * Récupérer les statistiques des candidatures
+   * @returns {Promise<Object>} Statistiques des candidatures
+   */
+  async getStatistics() {
+    try {
+      // Compter le nombre total de candidatures
+      const total = await db.Candidature.count();
+      
+      // Compter le nombre de candidatures par statut
+      const submitted = await db.Candidature.count({ where: { status: 'soumise' } });
+      const inReview = await db.Candidature.count({ where: { status: 'en_evaluation' } });
+      const accepted = await db.Candidature.count({ where: { status: 'acceptee' } });
+      const rejected = await db.Candidature.count({ where: { status: 'rejetee' } });
+      
+      return {
+        total,
+        submitted,
+        inReview,
+        accepted,
+        rejected
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new CandidatureService();
