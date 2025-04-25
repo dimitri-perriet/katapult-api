@@ -23,7 +23,7 @@ module.exports = (sequelize) => {
     promotion: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: 'Katapult 2023'
+      defaultValue: '2025'
     },
     status: {
       type: DataTypes.ENUM('brouillon', 'soumise', 'en_cours_evaluation', 'validee', 'rejetee'),
@@ -66,18 +66,24 @@ module.exports = (sequelize) => {
       allowNull: true,
       defaultValue: []
     },
-    completed_sections: {
+    structure_juridique: {
       type: DataTypes.JSON,
       allowNull: true,
-      defaultValue: {
-        ficheIdentite: false,
-        projetUtiliteSociale: false,
-        quiEstConcerne: false,
-        modeleEconomique: false,
-        partiesPrenantes: false,
-        equipeProjet: false,
-        documents: false
-      }
+      defaultValue: {}
+    },
+    etat_avancement: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: {}
+    },
+    completion_percentage: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0
+    },
+    phone: {
+      type: DataTypes.STRING(20),
+      allowNull: true
     },
     submission_date: {
       type: DataTypes.DATE,
@@ -136,51 +142,6 @@ module.exports = (sequelize) => {
       foreignKey: 'candidature_id',
       as: 'accesses'
     });
-  };
-
-  /**
-   * Calcule le pourcentage de complétion de la candidature
-   * @returns {number} Pourcentage de complétion
-   */
-  Candidature.prototype.getCompletionPercentage = function() {
-    if (!this.completed_sections) return 0;
-    
-    const sections = [
-      'ficheIdentite',
-      'projetUtiliteSociale',
-      'quiEstConcerne',
-      'modeleEconomique',
-      'partiesPrenantes',
-      'equipeProjet',
-      'documents'
-    ];
-    
-    const completedSections = sections.filter(section => 
-      this.completed_sections[section] === true
-    ).length;
-    
-    return Math.round((completedSections / sections.length) * 100);
-  };
-
-  /**
-   * Vérifie si la candidature est prête à être soumise
-   * @returns {boolean} True si toutes les sections requises sont complétées
-   */
-  Candidature.prototype.isReadyForSubmission = function() {
-    if (!this.completed_sections) return false;
-    
-    const requiredSections = [
-      'ficheIdentite',
-      'projetUtiliteSociale',
-      'quiEstConcerne',
-      'modeleEconomique',
-      'partiesPrenantes',
-      'equipeProjet'
-    ];
-    
-    return requiredSections.every(section => 
-      this.completed_sections[section] === true
-    );
   };
 
   return Candidature;

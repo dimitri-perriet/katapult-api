@@ -1,46 +1,16 @@
-const { Model, DataTypes } = require('sequelize');
+const { DataTypes } = require('sequelize');
 
+/**
+ * Modèle Sequelize pour les candidatures
+ * @param {Object} sequelize - Instance Sequelize
+ * @returns {Object} Modèle Candidature
+ */
 module.exports = (sequelize) => {
-  class Candidature extends Model {
-    static associate(models) {
-      // Relations avec d'autres modèles
-      Candidature.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
-      Candidature.hasMany(models.ProjectTeam, { foreignKey: 'candidature_id', as: 'teamMembers' });
-      Candidature.hasMany(models.Document, { foreignKey: 'candidature_id', as: 'documents' });
-      Candidature.hasMany(models.Evaluation, { foreignKey: 'candidature_id', as: 'evaluations' });
-      Candidature.belongsToMany(models.User, { 
-        through: models.CandidatureAccess,
-        foreignKey: 'candidature_id',
-        as: 'accessUsers'
-      });
-    }
-
-    // Méthode pour calculer le pourcentage de complétion de la candidature
-    getCompletionPercentage() {
-      if (!this.completed_sections) return 0;
-      
-      // Convertir le JSON en objet si nécessaire
-      const sections = typeof this.completed_sections === 'string' 
-        ? JSON.parse(this.completed_sections) 
-        : this.completed_sections;
-      
-      const totalSections = Object.keys(sections).length;
-      const completedSections = Object.values(sections).filter(Boolean).length;
-      
-      return Math.round((completedSections / totalSections) * 100);
-    }
-
-    // Méthode pour vérifier si la candidature est prête pour la soumission
-    isReadyForSubmission() {
-      return this.getCompletionPercentage() === 100;
-    }
-  }
-
-  Candidature.init({
+  const Candidature = sequelize.define('Candidature', {
     id: {
       type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true
+      primaryKey: true,
+      autoIncrement: true
     },
     user_id: {
       type: DataTypes.INTEGER,
@@ -51,76 +21,128 @@ module.exports = (sequelize) => {
       }
     },
     promotion: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: { msg: 'Promotion requise' }
-      }
+      defaultValue: '2025'
     },
-    phone: {
-      type: DataTypes.STRING(50),
+    status: {
+      type: DataTypes.ENUM('brouillon', 'soumise', 'en_cours_evaluation', 'validee', 'rejetee'),
       allowNull: false,
-      defaultValue: '',
-      validate: {
-        notNull: { msg: 'Le numéro de téléphone est requis' }
-      }
+      defaultValue: 'brouillon'
     },
+    // Colonnes JSON pour les données structurées
     fiche_identite: {
       type: DataTypes.JSON,
-      allowNull: true
+      allowNull: true,
+      defaultValue: {}
     },
     projet_utilite_sociale: {
       type: DataTypes.JSON,
-      allowNull: true
+      allowNull: true,
+      defaultValue: {}
     },
     qui_est_concerne: {
       type: DataTypes.JSON,
-      allowNull: true
+      allowNull: true,
+      defaultValue: {}
     },
     modele_economique: {
       type: DataTypes.JSON,
-      allowNull: true
+      allowNull: true,
+      defaultValue: {}
     },
     parties_prenantes: {
       type: DataTypes.JSON,
-      allowNull: true
+      allowNull: true,
+      defaultValue: {}
     },
     equipe_projet: {
       type: DataTypes.JSON,
-      allowNull: true
+      allowNull: true,
+      defaultValue: {}
     },
     documents_json: {
       type: DataTypes.JSON,
-      allowNull: true
+      allowNull: true,
+      defaultValue: []
     },
-    completed_sections: {
+    structure_juridique: {
       type: DataTypes.JSON,
-      allowNull: true
+      allowNull: true,
+      defaultValue: {}
     },
-    status: {
-      type: DataTypes.ENUM('brouillon', 'soumise', 'en_evaluation', 'acceptee', 'rejetee'),
-      defaultValue: 'brouillon'
+    etat_avancement: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: {}
+    },
+    completion_percentage: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0
+    },
+    phone: {
+      type: DataTypes.STRING(20),
+      allowNull: true
     },
     submission_date: {
       type: DataTypes.DATE,
       allowNull: true
     },
     monday_item_id: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING,
       allowNull: true
     },
     generated_pdf_url: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING,
       allowNull: true
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
     }
   }, {
-    sequelize,
-    modelName: 'Candidature',
     tableName: 'candidatures',
     timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    underscored: true
   });
+
+  /**
+   * Associations du modèle
+   * @param {Object} models - Modèles de la base de données
+   */
+  Candidature.associate = function(models) {
+    Candidature.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      as: 'user'
+    });
+    
+    Candidature.hasMany(models.ProjectTeam, {
+      foreignKey: 'candidature_id',
+      as: 'teamMembers'
+    });
+    
+    Candidature.hasMany(models.Document, {
+      foreignKey: 'candidature_id',
+      as: 'documents'
+    });
+    
+    Candidature.hasMany(models.Evaluation, {
+      foreignKey: 'candidature_id',
+      as: 'evaluations'
+    });
+    
+    Candidature.hasMany(models.CandidatureAccess, {
+      foreignKey: 'candidature_id',
+      as: 'accesses'
+    });
+  };
 
   return Candidature;
 }; 

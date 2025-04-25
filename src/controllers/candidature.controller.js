@@ -22,9 +22,9 @@ exports.createCandidature = async (req, res) => {
     });
     
     // Vérifier la structure des données retournées pour éviter l'erreur "Cannot read properties of undefined"
-    const candidaturesArray = Array.isArray(existingCandidatures) 
-      ? existingCandidatures 
-      : (existingCandidatures.candidatures || []);
+    const candidaturesArray = existingCandidatures && Array.isArray(existingCandidatures.candidatures)
+      ? existingCandidatures.candidatures
+      : (Array.isArray(existingCandidatures) ? existingCandidatures : []);
     
     const activeCandidature = candidaturesArray.find(c => 
       c.status !== 'rejetee'
@@ -40,84 +40,22 @@ exports.createCandidature = async (req, res) => {
     
     // Définir la structure par défaut pour une nouvelle candidature
     const candidatureData = {
-      promotion: req.body.promotion || 'Katapult 2023',
+      promotion: req.body.promotion || '2025',
       status: 'brouillon',
-      // Définir explicitement phone comme un champ de premier niveau avec une valeur par défaut
-      phone: req.body.phone || req.body.equipe_projet?.reference?.telephone || '',
+      phone: req.body.equipe_projet?.reference?.telephone || '',
       
-      // Utiliser directement les sections de req.body si elles existent, sinon utiliser des objets vides
-      fiche_identite: req.body.fiche_identite || {
-        callSource: '',
-        callSourceOther: '',
-        phone: '',
-        street: '',
-        city: '',
-        postalCode: '',
-        country: 'France',
-        currentSituation: '',
-        currentSituationOther: '',
-        projectName: '',
-        projectDescription: '',
-      },
+      fiche_identite: req.body.fiche_identite || {},
+      projet_utilite_sociale: req.body.projet_utilite_sociale || {},
+      qui_est_concerne: req.body.qui_est_concerne || {},
+      modele_economique: req.body.modele_economique || {},
+      parties_prenantes: req.body.parties_prenantes || {},
+      equipe_projet: req.body.equipe_projet || {},
+      structure_juridique: req.body.structure_juridique || {},
+      etat_avancement: req.body.etat_avancement || {},
       
-      projet_utilite_sociale: req.body.projet_utilite_sociale || {
-        sector: '',
-        sectorOther: '',
-        maturityLevel: '',
-        startDate: null,
-        implementationArea: '',
-        interventionArea: '',
-        problemStatement: '',
-        solutionDescription: '',
-      },
+      documents_json: req.body.documents || { businessPlan: null, financialProjections: null, additionalDocuments: [] },
       
-      qui_est_concerne: req.body.qui_est_concerne || {
-        beneficiaries: [],
-        targetGroups: [],
-        impactDescription: '',
-        measurableImpacts: []
-      },
-      
-      modele_economique: req.body.modele_economique || {
-        economicModel: '',
-        revenueStructure: [],
-        fundingSources: [],
-        financialProjections: {
-          year1: { revenues: 0, expenses: 0, result: 0 },
-          year2: { revenues: 0, expenses: 0, result: 0 },
-          year3: { revenues: 0, expenses: 0, result: 0 }
-        }
-      },
-      
-      parties_prenantes: req.body.parties_prenantes || {
-        partners: [],
-        competitors: [],
-        stakeholders: []
-      },
-      
-      equipe_projet: req.body.equipe_projet || {
-        members: []
-      },
-      
-      structure_juridique: req.body.structure_juridique || {
-        hasExistingStructure: false,
-        structureName: '',
-        structureStatus: '',
-        structureCreationDate: '',
-        structureContext: ''
-      },
-      
-      documents_json: req.body.documents_json || [],
-      
-      completed_sections: req.body.completed_sections || {
-        ficheIdentite: false,
-        projetUtiliteSociale: false,
-        quiEstConcerne: false,
-        modeleEconomique: false,
-        partiesPrenantes: false,
-        equipeProjet: false,
-        documents: false
-      }
+      completion_percentage: req.body.metadata?.completionPercentage || 0,
     };
     
     // Assurer que phone est toujours une chaîne et jamais null ou undefined
@@ -231,11 +169,40 @@ exports.updateCandidature = async (req, res) => {
     
     if (req.body.equipe_projet) {
       updateData.equipe_projet = req.body.equipe_projet;
+      if (req.body.equipe_projet.reference && req.body.equipe_projet.reference.telephone !== undefined) {
+        updateData.phone = req.body.equipe_projet.reference.telephone || '';
+      }
     }
     
-    // Mise à jour des sections complétées
-    if (req.body.completed_sections) {
-      updateData.completed_sections = req.body.completed_sections;
+    if (req.body.structure_juridique) {
+      updateData.structure_juridique = req.body.structure_juridique;
+    }
+    
+    if (req.body.etat_avancement) {
+      updateData.etat_avancement = req.body.etat_avancement;
+    }
+    
+    if (req.body.documents) {
+      updateData.documents_json = req.body.documents;
+    }
+    
+    // Mettre à jour completion_percentage si fourni dans metadata
+    if (req.body.metadata && req.body.metadata.completionPercentage !== undefined) {
+      updateData.completion_percentage = req.body.metadata.completionPercentage;
+    }
+
+    // Utiliser lastSaved de metadata pour updated_at si disponible
+    if (req.body.metadata && req.body.metadata.lastSaved) {
+      try {
+        const lastSavedDate = new Date(req.body.metadata.lastSaved);
+        if (!isNaN(lastSavedDate.getTime())) {
+          updateData.updated_at = lastSavedDate;
+        } else {
+          console.warn(`Date 'lastSaved' invalide reçue: ${req.body.metadata.lastSaved}`);
+        }
+      } catch (dateError) {
+        console.error(`Erreur lors de la conversion de 'lastSaved': ${dateError}`);
+      }
     }
     
     // Effectuer la mise à jour via le service
@@ -303,21 +270,13 @@ exports.submitCandidature = async (req, res) => {
       });
     }
     
-    // Vérifier si toutes les sections sont complétées
-    const completed = candidature.completed_sections;
-    const allSectionsCompleted = 
-      completed.ficheIdentite && 
-      completed.projetUtiliteSociale && 
-      completed.quiEstConcerne && 
-      completed.modeleEconomique && 
-      completed.partiesPrenantes && 
-      completed.equipeProjet;
-    
-    if (!allSectionsCompleted) {
+    // Vérifier si le pourcentage de complétion est suffisant (par exemple > 90%)
+    const requiredPercentage = 90;
+    if (!candidature.completion_percentage || candidature.completion_percentage <= requiredPercentage) {
       return res.status(400).json({
         success: false,
-        message: 'Vous devez compléter toutes les sections avant de soumettre votre candidature',
-        completed
+        message: `Vous devez atteindre au moins ${requiredPercentage}% de complétion pour soumettre votre candidature.`,
+        completionPercentage: candidature.completion_percentage || 0
       });
     }
     
@@ -418,7 +377,7 @@ exports.getCandidature = async (req, res) => {
       isOwner: userIsOwner,
       isAdmin: userIsAdmin,
       isEvaluator: userIsEvaluator,
-      completionPercentage: candidature.getCompletionPercentage ? candidature.getCompletionPercentage() : 0
+      completionPercentage: candidature.completion_percentage || 0
     });
   } catch (error) {
     console.error('Erreur lors de la récupération de la candidature:', error);
@@ -511,7 +470,8 @@ exports.getAllCandidatures = async (req, res) => {
         email: c.user ? c.user.email : '',
         createdAt: c.created_at,
         updatedAt: c.updated_at,
-        submissionDate: c.submission_date
+        submissionDate: c.submission_date,
+        completionPercentage: c.completion_percentage || 0
       };
     });
     
