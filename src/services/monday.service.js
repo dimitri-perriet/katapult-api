@@ -57,22 +57,48 @@ exports.syncWithMonday = {
         return null;
       }
       
-      console.log(`Tentative de création d'un nouvel item dans Monday.com: ${itemName}`);
+      // S'assurer que le nom du projet n'est pas vide
+      const projectName = itemName && itemName.trim() !== '' ? itemName : "Projet sans nom";
       
-      // Préparer les colonnes initiales
-      const initialColumnValues = {
-        status: { label: "Soumise" }
+      console.log(`Tentative de création d'un nouvel item dans Monday.com: ${projectName}`);
+      
+      // Fonction pour tronquer et nettoyer les textes longs
+      const cleanText = (text, maxLength = 100) => {
+        if (!text) return "";
+        // Limiter la longueur et échapper les caractères spéciaux
+        return String(text).substring(0, maxLength)
+          .replace(/\\/g, "\\\\")
+          .replace(/\n/g, " ")
+          .replace(/\r/g, "")
+          .replace(/\t/g, " ")
+          .replace(/"/g, '\\"');
       };
       
-      // Échapper correctement les guillemets pour la chaîne JSON
-      const escapedColumnValues = JSON.stringify(initialColumnValues).replace(/"/g, '\\"');
+      // Utiliser uniquement les colonnes qui fonctionnent selon nos tests
+      const columnValues = {
+        // Colonnes de base (fonctionnent toujours)
+        "color_mkqa2y6n": { "index": 1 }, // Date réception
+        "color_mkqan19a": { "index": 1 }, // Lieu
+        "color_mkqajhfz": { "index": 1 }, // Dpt
+        
+        // Colonnes supplémentaires (testées et fonctionnelles)
+        "color_mkqaqx3b": { "index": 1, "text": cleanText(itemData.porterName) }, // NOM Prénom PP principal
+        "color_mkqa9q6e": { "index": 1, "text": cleanText(itemData.shortDescription) }, // Courte description
+        "color_mkqa1qp8": { "index": 1, "text": cleanText(itemData.phone) }, // Tel
+        "color_mkqak4k4": { "index": 1, "text": cleanText(itemData.porterEmail) } // Email
+      };
       
-      // Construire la requête GraphQL directe
+      console.log('Colonnes utilisées:', Object.keys(columnValues).join(', '));
+      
+      // Échapper correctement les guillemets pour le format attendu par Monday
+      const escapedColumnValues = JSON.stringify(columnValues).replace(/"/g, '\\"');
+      
+      // Construire la requête GraphQL directement comme dans le test qui fonctionne
       const query = `
         mutation {
-          create_item (
+          create_item(
             board_id: ${parseInt(boardId)},
-            item_name: "${itemName.replace(/"/g, '\\"')}",
+            item_name: "${projectName.replace(/"/g, '\\"')}",
             column_values: "${escapedColumnValues}"
           ) {
             id
@@ -80,14 +106,14 @@ exports.syncWithMonday = {
         }
       `;
       
-      console.log('Query GraphQL pour création:', query);
-      
-      const response = await axios.post(mondayConfig.apiUrl, 
+      // Faire l'appel à l'API comme dans le test qui fonctionne
+      const response = await axios.post(
+        'https://api.monday.com/v2', 
         { query }, 
         {
           headers: { 
-            'Authorization': `Bearer ${apiKey}`, 
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': apiKey
           }
         }
       );
@@ -97,16 +123,11 @@ exports.syncWithMonday = {
       if (response.data && response.data.data && response.data.data.create_item) {
         const itemId = response.data.data.create_item.id;
         console.log(`Item créé avec succès dans Monday.com avec l'ID: ${itemId}`);
-        
-        // Mise à jour des autres colonnes avec les données de l'item
-        if (Object.keys(itemData).length > 0) {
-          const updateResult = await this.updateItemColumns(itemId, itemData);
-          console.log(`Résultat de la mise à jour des colonnes: ${updateResult}`);
-        }
+        console.log(`Visualisable à l'adresse: https://hommetmilans-team.monday.com/boards/${boardId}/pulses/${itemId}`);
         
         return {
           id: itemId,
-          name: itemName,
+          name: projectName,
           ...itemData
         };
       } else if (response.data && response.data.errors) {
@@ -139,48 +160,104 @@ exports.syncWithMonday = {
       
       console.log(`Tentative de mise à jour de l'item ${itemId} dans Monday.com`);
       
-      // Mise à jour du nom de l'item si fourni
-      if (itemData.name) {
-        const nameUpdateMutation = `
-          mutation ($itemId: Int!, $boardId: Int!, $columnValues: String!) {
-            change_multiple_column_values(
-              item_id: $itemId, 
-              board_id: $boardId, 
-              column_values: $columnValues
-            ) {
-              id
-              name
-            }
+      // Préparer les valeurs de colonnes exactement comme dans createItem qui fonctionne
+      const columnValues = {
+        // Ajouter les indices de couleur nécessaires pour l'affichage correct
+        "color_mkqa2y6n": { "index": 1 },
+        "color_mkqan19a": { "index": 1 },
+        "color_mkqajhfz": { "index": 1 },
+        
+        // Statut de la candidature (conserver le statut actuel)
+        "status": { "label": "Soumise" },
+        
+        // Colonnes avec les informations du projet
+        "text": itemData.porterName || "", // NOM Prénom PP principal
+        "email": itemData.porterEmail ? { "email": itemData.porterEmail, "text": itemData.porterEmail } : null,
+        "phone": itemData.phone ? { "phone": itemData.phone, "countryShortName": "FR" } : null,
+        "text6": itemData.sector || "", // Thématique (secteur)
+        "text8": itemData.location || "", // Localisation
+        "text9": itemData.shortDescription || "", // Courte description
+      };
+      
+      // Si la date de soumission est disponible, l'ajouter
+      if (itemData.submissionDate) {
+        columnValues.date4 = { "date": itemData.submissionDate };
+      }
+
+      // Le nom du projet est géré par le nom de l'élément, pas par une colonne
+      const projectName = itemData.name || "Projet sans nom";
+      
+      // Convertir en JSON et échapper les guillemets exactement comme dans le script de test
+      const escapedColumnValues = JSON.stringify(columnValues).replace(/"/g, '\\"');
+      
+      // Utiliser exactement la même structure de requête qui fonctionne
+      const query = `
+        mutation {
+          change_multiple_column_values(
+            item_id: ${parseInt(itemId, 10)},
+            board_id: ${parseInt(boardId, 10)},
+            column_values: "${escapedColumnValues}"
+          ) {
+            id
           }
-        `;
-        
-        // Préparer les données de colonnes
-        const nameColumnValues = JSON.stringify({ name: itemData.name });
-        
-        const nameVariables = {
-          itemId: parseInt(itemId, 10),
-          boardId: parseInt(boardId, 10),
-          columnValues: nameColumnValues
-        };
-        
-        console.log('Variables pour mise à jour du nom:', JSON.stringify(nameVariables));
-        
-        const nameResponse = await axios.post(mondayConfig.apiUrl, { 
-          query: nameUpdateMutation,
-          variables: nameVariables 
-        }, {
+        }
+      `;
+      
+      console.log('Query GraphQL pour mise à jour:', query);
+      
+      // Faire l'appel à l'API exactement comme dans le script de test
+      const response = await axios.post(
+        'https://api.monday.com/v2', 
+        { query }, 
+        {
           headers: { 
-            'Authorization': `Bearer ${apiKey}`, 
             'Content-Type': 'application/json',
-            'API-Version': '2023-10'
+            'Authorization': apiKey // Sans préfixe "Bearer"
           }
-        });
-        
-        console.log('Réponse de Monday.com pour mise à jour du nom:', JSON.stringify(nameResponse.data));
+        }
+      );
+      
+      console.log('Réponse de Monday.com pour update_item:', JSON.stringify(response.data));
+      
+      if (response.data && response.data.errors) {
+        console.error('Erreurs GraphQL lors de la mise à jour dans Monday.com:', JSON.stringify(response.data.errors));
+        return null;
       }
       
-      // Mise à jour des colonnes avec les données de l'item
-      await this.updateItemColumns(itemId, itemData);
+      // Si nous voulons changer le nom de l'élément, faire une deuxième requête
+      if (projectName !== "Projet sans nom") {
+        try {
+          const renameQuery = `
+            mutation {
+              change_item_name(
+                item_id: ${parseInt(itemId, 10)},
+                board_id: ${parseInt(boardId, 10)},
+                new_name: "${projectName.replace(/"/g, '\\"')}"
+              ) {
+                id
+                name
+              }
+            }
+          `;
+          
+          console.log('Query GraphQL pour renommer:', renameQuery);
+          
+          const renameResponse = await axios.post(
+            'https://api.monday.com/v2', 
+            { query: renameQuery }, 
+            {
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': apiKey
+              }
+            }
+          );
+          
+          console.log('Réponse de Monday.com pour renommer:', JSON.stringify(renameResponse.data));
+        } catch (renameError) {
+          console.warn('Erreur lors du renommage de l\'item (non bloquant):', renameError.message);
+        }
+      }
       
       return {
         id: itemId,
@@ -210,12 +287,10 @@ exports.syncWithMonday = {
       
       console.log(`Tentative de mise à jour des colonnes pour l'item ${itemId} dans Monday.com`);
       
-      // Préparation des valeurs de colonnes en format JSON
-      const columnValues = {};
-      
-      // Mapping basé sur les colonnes de votre tableau Monday.com
-      // Statut (par défaut à "Soumise" pour les nouveaux éléments)
-      columnValues.status = { label: "Soumise" };
+      // Préparation des valeurs de colonnes au format exact qui fonctionne
+      const columnValues = {
+        status: { label: "Soumise" }
+      };
       
       // Date réception (date de soumission)
       if (itemData.submissionDate) {
@@ -252,31 +327,24 @@ exports.syncWithMonday = {
         columnValues.text6 = itemData.sector;
       }
       
-      // Convertir et échapper correctement pour la requête GraphQL
-      const columnValuesString = JSON.stringify(columnValues);
-      const escapedColumnValues = columnValuesString.replace(/"/g, '\\"');
+      // Échapper correctement les guillemets comme dans la requête curl réussie
+      const escapedColumnValues = JSON.stringify(columnValues).replace(/"/g, '\\"');
       
-      // Approche simplifiée: requête GraphQL directe
-      const mutation = `
-        mutation {
-          change_multiple_column_values(
-            item_id: ${parseInt(itemId, 10)}, 
-            board_id: ${parseInt(boardId, 10)}, 
-            column_values: "${escapedColumnValues}"
-          ) {
-            id
+      // Utiliser exactement la même structure de requête que celle qui fonctionne avec curl
+      const query = `mutation { change_multiple_column_values(item_id: ${parseInt(itemId, 10)}, board_id: ${parseInt(boardId, 10)}, column_values: "${escapedColumnValues}") { id } }`;
+      
+      console.log('Requête GraphQL pour mise à jour des colonnes:', query);
+      
+      const response = await axios.post(
+        mondayConfig.apiUrl, 
+        { query }, 
+        {
+          headers: { 
+            'Authorization': apiKey, // Utiliser le token directement sans "Bearer "
+            'Content-Type': 'application/json'
           }
         }
-      `;
-      
-      console.log('Mutation pour mise à jour des colonnes:', mutation);
-      
-      const response = await axios.post(mondayConfig.apiUrl, { query: mutation }, {
-        headers: { 
-          'Authorization': `Bearer ${apiKey}`, 
-          'Content-Type': 'application/json'
-        }
-      });
+      );
       
       console.log('Réponse de Monday.com pour update_columns:', JSON.stringify(response.data));
       
@@ -311,27 +379,17 @@ exports.syncWithMonday = {
 
       // Mapper le statut
       const statusColumn = statusMapping[newStatus] || 'Brouillon';
-
+      
       // Préparer les données de statut
       const columnValues = {
         status: { label: statusColumn }
       };
 
-      // Échapper correctement les guillemets pour la chaîne JSON
+      // Échapper correctement les guillemets pour la chaîne JSON comme dans curl
       const escapedColumnValues = JSON.stringify(columnValues).replace(/"/g, '\\"');
 
-      // Requête GraphQL directe
-      const query = `
-        mutation {
-          change_multiple_column_values(
-            item_id: ${parseInt(candidature.monday_item_id, 10)},
-            board_id: ${parseInt(mondayConfig.boardId, 10)},
-            column_values: "${escapedColumnValues}"
-          ) {
-            id
-          }
-        }
-      `;
+      // Requête GraphQL directe dans le format qui fonctionne
+      const query = `mutation { change_multiple_column_values(item_id: ${parseInt(candidature.monday_item_id, 10)}, board_id: ${parseInt(mondayConfig.boardId, 10)}, column_values: "${escapedColumnValues}") { id } }`;
       
       console.log('Requête GraphQL pour mise à jour du statut:', query);
 
@@ -342,7 +400,7 @@ exports.syncWithMonday = {
           {
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${mondayConfig.apiKey}`
+              'Authorization': mondayConfig.apiKey // Utiliser le token directement sans "Bearer "
             }
           }
         );
@@ -375,30 +433,39 @@ exports.syncWithMonday = {
     try {
       // Query pour récupérer un item
       const query = `
-        query ($itemId: Int!) {
-          items (ids: [$itemId], board_id: ${mondayConfig.boardId}) {
+        query {
+          items(ids: [${parseInt(itemId)}]) {
             id
             name
             column_values {
               id
               title
-              text
               value
+              text
             }
           }
         }
       `;
 
-      // Variables pour la requête
-      const variables = {
-        itemId: parseInt(itemId),
-      };
-
-      // Exécuter la requête
-      const result = await executeQuery(query, variables);
+      // Exécuter la requête directement sans variables
+      const response = await axios.post(
+        mondayConfig.apiUrl,
+        { query },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': mondayConfig.apiKey
+          }
+        }
+      );
       
-      if (result.items && result.items.length > 0) {
-        return result.items[0];
+      if (response.data.errors) {
+        console.error('Erreurs GraphQL lors de la récupération de l\'item:', JSON.stringify(response.data.errors));
+        return null;
+      }
+      
+      if (response.data.data && response.data.data.items && response.data.data.items.length > 0) {
+        return response.data.data.items[0];
       }
       
       return null;
@@ -431,36 +498,64 @@ exports.syncWithMonday = {
         throw new Error(`Candidature ${candidatureId} non trouvée pour la synchronisation avec Monday.com`);
       }
       
+      console.log(`Synchronisation de la candidature ${candidatureId} avec Monday.com - Statut: ${candidature.status}`);
+      
       // Extraire les données du porteur de projet (user)
       const user = candidature.user;
       
-      // Extraire les informations de la candidature
-      const ficheIdentite = candidature.fiche_identite || {};
-      const projetUtiliteSociale = candidature.projet_utilite_sociale || {};
-      const quiEstConcerne = candidature.qui_est_concerne || {};
+      // Extraire les informations de la candidature et parser les JSON
+      const ficheIdentite = typeof candidature.fiche_identite === 'string' 
+        ? JSON.parse(candidature.fiche_identite) 
+        : candidature.fiche_identite || {};
+      
+      const projetUtiliteSociale = typeof candidature.projet_utilite_sociale === 'string' 
+        ? JSON.parse(candidature.projet_utilite_sociale) 
+        : candidature.projet_utilite_sociale || {};
       
       // Récupérer le nom du projet
       const projectName = ficheIdentite.projectName || 'Projet sans nom';
       
-      // Préparer les données pour Monday.com
+      // Compiler une description courte du projet
+      let shortDescription = projetUtiliteSociale.shortDescription || '';
+      if (!shortDescription && projetUtiliteSociale.projectSummary) {
+        shortDescription = projetUtiliteSociale.projectSummary.substring(0, 100);
+      }
+      
+      // Préparer les données pour Monday.com avec les champs qui fonctionnent
       const mondayData = {
-        name: projectName,
-        shortDescription: projetUtiliteSociale.shortDescription || ficheIdentite.shortDescription || 'Pas de description',
+        // Informations de base
         porterName: `${user.first_name} ${user.last_name}`,
         porterEmail: user.email,
         phone: user.phone || ficheIdentite.contactPhone || '',
-        sector: projetUtiliteSociale.sector || 'Non spécifié',
-        location: ficheIdentite.location || quiEstConcerne.geographicArea || 'Non spécifié',
-        submissionDate: candidature.submission_date ? new Date(candidature.submission_date).toISOString() : null
+        
+        // Détails du projet
+        shortDescription: shortDescription || projetUtiliteSociale.projectSummary || 'Pas de description',
+        sector: ficheIdentite.sector || projetUtiliteSociale.sector || '',
+        location: ficheIdentite.territory || 'Non spécifié',
+        
+        // Métadonnées
+        submissionDate: candidature.submission_date ? new Date(candidature.submission_date).toISOString() : null,
+        status: candidature.status || 'brouillon',
+        promotion: candidature.promotion || ''
       };
+      
+      console.log("Données préparées pour Monday:", JSON.stringify(mondayData));
       
       // Déterminer si nous devons créer un nouvel item ou mettre à jour un existant
       if (candidature.monday_item_id) {
         // Mettre à jour l'item existant
-        return await exports.syncWithMonday.updateItem(
+        const result = await exports.syncWithMonday.updateItem(
           candidature.monday_item_id,
           mondayData
         );
+        
+        if (result) {
+          console.log(`Synchronisation réussie de la candidature ${candidatureId} avec Monday.com`);
+        } else {
+          console.error(`Échec de la synchronisation de la candidature ${candidatureId} avec Monday.com`);
+        }
+        
+        return result;
       } else {
         // Créer un nouvel item
         const mondayItem = await exports.syncWithMonday.createItem(
@@ -473,6 +568,7 @@ exports.syncWithMonday = {
           await candidatureService.updateCandidature(candidatureId, {
             monday_item_id: mondayItem.id
           });
+          console.log(`Candidature ${candidatureId} liée à l'item Monday.com ${mondayItem.id}`);
           return mondayItem;
         }
       }
