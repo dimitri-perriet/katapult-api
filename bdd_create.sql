@@ -31,7 +31,7 @@ USE `sc1padu1468_katapult_db`;
 
 DROP TABLE IF EXISTS `candidatures`;
 CREATE TABLE `candidatures` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `fiche_identite` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`fiche_identite`)),
   `projet_utilite_sociale` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`projet_utilite_sociale`)),
@@ -39,17 +39,24 @@ CREATE TABLE `candidatures` (
   `modele_economique` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`modele_economique`)),
   `parties_prenantes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`parties_prenantes`)),
   `equipe_projet` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`equipe_projet`)),
-  `documents_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`documents_json`)),
-  `completed_sections` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`completed_sections`)),
+  `structure_juridique` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`structure_juridique`)), -- Added to match JSON
+  `etat_avancement` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`etat_avancement`)), -- New column
+  `documents_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`documents_json`)), -- Kept to store the new 'documents' structure
+  `completion_percentage` int(11) DEFAULT 0, -- New column
   `promotion` varchar(100) NOT NULL,
-  `phone` varchar(20) NOT NULL,
+  `phone` varchar(20) DEFAULT NULL, -- Modified to allow NULL if not initially provided
   `status` enum('brouillon','soumise','en_evaluation','acceptee','rejetee') DEFAULT 'brouillon',
   `submission_date` datetime DEFAULT NULL,
   `monday_item_id` varchar(255) DEFAULT NULL,
   `generated_pdf_url` varchar(255) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
-  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_candidature_user` (`user_id`),
+  KEY `idx_promotion` (`promotion`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `candidatures_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
