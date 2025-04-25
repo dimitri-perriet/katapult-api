@@ -63,7 +63,7 @@ exports.syncWithMonday = {
       console.log(`Tentative de création d'un nouvel item dans Monday.com: ${projectName}`);
       
       // Fonction pour tronquer et nettoyer les textes longs
-      const cleanText = (text, maxLength = 100) => {
+      const cleanText = (text, maxLength = 500) => {
         if (!text) return "";
         // Limiter la longueur et échapper les caractères spéciaux
         return String(text).substring(0, maxLength)
@@ -89,30 +89,32 @@ exports.syncWithMonday = {
       
       // Utiliser uniquement les colonnes qui fonctionnent selon nos tests
       const columnValues = {
-        // Colonnes de base (fonctionnent toujours)
-        "color_mkqa2y6n": { "index": 1 }, // Date réception
-        "color_mkqan19a": { "index": 1 }, // Lieu
-        "color_mkqajhfz": { "index": 1 }, // Dpt
-        "color_mkqa1815": { "index": 1 }, // HN/BN (fonctionne selon nos tests)
+        // Colonnes de base (toutes en texte selon la structure récupérée)
+        "text_mkqbv9ks": "Date réception", // Date réception
+        "text_mkqbtxmh": cleanText(itemData.location || ""), // Localisation
+        "text_mkqb4w6": cleanText(itemData.location || ""), // Lieu
+        "text_mkqbktmv": itemData.department || "", // Dpt
+        "text_mkqbc9ak": region || "", // HN/BN
         
-        // Colonnes supplémentaires (testées et fonctionnelles)
-        "color_mkqaqx3b": { "index": 1, "text": cleanText(itemData.porterName) }, // NOM Prénom PP principal
-        "color_mkqa9q6e": { "index": 1, "text": cleanText(itemData.shortDescription) }, // Courte description
-        "color_mkqa1qp8": { "index": 1, "text": cleanText(itemData.phone) }, // Tel
-        "color_mkqak4k4": { "index": 1, "text": cleanText(itemData.porterEmail) } // Email
+        // Colonnes supplémentaires (toutes en texte)
+        "text_mkqbgeza": cleanText(itemData.porterName || ""), // NOM Prénom PP principal
+        "long_text_mkqbm5qx": cleanText(itemData.shortDescription || ""), // Courte description
+        "text_mkqb77mg": cleanText(itemData.phone || ""), // Tel
+        "text_mkqbf1xr": cleanText(itemData.porterEmail || "") // Email
       };
       
       // Remplir les valeurs de texte pour les colonnes de statut
       if (itemData.department) {
-        columnValues.color_mkqajhfz.text = itemData.department; // Dpt
+        columnValues.text_mkqbktmv = itemData.department; // Dpt
       }
       
       if (region) {
-        columnValues.color_mkqa1815.text = region; // HN/BN
+        columnValues.text_mkqbc9ak = region; // HN/BN
       }
       
       if (itemData.location) {
-        columnValues.color_mkqan19a.text = cleanText(itemData.location); // Lieu
+        columnValues.text_mkqbtxmh = cleanText(itemData.location); // Localisation
+        columnValues.text_mkqb4w6 = cleanText(itemData.location); // Lieu
       }
       
       console.log('Colonnes utilisées:', Object.keys(columnValues).join(', '));
@@ -189,7 +191,7 @@ exports.syncWithMonday = {
       console.log(`Tentative de mise à jour de l'item ${itemId} dans Monday.com`);
       
       // Fonction pour tronquer et nettoyer les textes longs
-      const cleanText = (text, maxLength = 100) => {
+      const cleanText = (text, maxLength = 500) => {
         if (!text) return "";
         return String(text).substring(0, maxLength)
           .replace(/\\/g, "\\\\")
@@ -214,30 +216,32 @@ exports.syncWithMonday = {
       
       // Utiliser uniquement les colonnes qui fonctionnent selon nos tests
       const columnValues = {
-        // Colonnes de base (fonctionnent toujours)
-        "color_mkqa2y6n": { "index": 1 }, // Date réception
-        "color_mkqan19a": { "index": 1 }, // Lieu
-        "color_mkqajhfz": { "index": 1 }, // Dpt
-        "color_mkqa1815": { "index": 1 }, // HN/BN
+        // Colonnes de base (toutes en texte selon la structure récupérée)
+        "text_mkqbv9ks": "Date réception", // Date réception
+        "text_mkqbtxmh": cleanText(itemData.location || ""), // Localisation
+        "text_mkqb4w6": cleanText(itemData.location || ""), // Lieu
+        "text_mkqbktmv": itemData.department || "", // Dpt
+        "text_mkqbc9ak": region || "", // HN/BN
         
-        // Colonnes supplémentaires (testées et fonctionnelles)
-        "color_mkqaqx3b": { "index": 1, "text": cleanText(itemData.porterName) }, // NOM Prénom PP principal
-        "color_mkqa9q6e": { "index": 1, "text": cleanText(itemData.shortDescription) }, // Courte description
-        "color_mkqa1qp8": { "index": 1, "text": cleanText(itemData.phone) }, // Tel
-        "color_mkqak4k4": { "index": 1, "text": cleanText(itemData.porterEmail) } // Email
+        // Colonnes supplémentaires (toutes en texte)
+        "text_mkqbgeza": cleanText(itemData.porterName || ""), // NOM Prénom PP principal
+        "long_text_mkqbm5qx": cleanText(itemData.shortDescription || ""), // Courte description
+        "text_mkqb77mg": cleanText(itemData.phone || ""), // Tel
+        "text_mkqbf1xr": cleanText(itemData.porterEmail || "") // Email
       };
       
       // Remplir les valeurs de texte pour les colonnes de statut
       if (itemData.department) {
-        columnValues.color_mkqajhfz.text = itemData.department; // Dpt
+        columnValues.text_mkqbktmv = itemData.department; // Dpt
       }
       
       if (region) {
-        columnValues.color_mkqa1815.text = region; // HN/BN
+        columnValues.text_mkqbc9ak = region; // HN/BN
       }
       
       if (itemData.location) {
-        columnValues.color_mkqan19a.text = cleanText(itemData.location); // Lieu
+        columnValues.text_mkqbtxmh = cleanText(itemData.location); // Localisation
+        columnValues.text_mkqb4w6 = cleanText(itemData.location); // Lieu
       }
       
       // Le nom du projet est géré par le nom de l'élément, pas par une colonne
@@ -346,42 +350,38 @@ exports.syncWithMonday = {
       
       // Préparation des valeurs de colonnes au format exact qui fonctionne
       const columnValues = {
-        status: { label: "Soumise" }
+        // Pas de colonne status dans la structure récupérée
       };
       
       // Date réception (date de soumission)
       if (itemData.submissionDate) {
-        columnValues.date4 = { date: itemData.submissionDate };
+        columnValues["text_mkqbv9ks"] = itemData.submissionDate;
       }
       
       // NOM Prénom PP principal
       if (itemData.porterName) {
-        columnValues.text = itemData.porterName;
+        columnValues["text_mkqbgeza"] = cleanText(itemData.porterName);
       }
       
       // Courte description
       if (itemData.shortDescription) {
-        columnValues.text9 = itemData.shortDescription;
+        columnValues["long_text_mkqbm5qx"] = cleanText(itemData.shortDescription);
       }
       
       // Localisation
       if (itemData.location) {
-        columnValues.text8 = itemData.location;
+        columnValues["text_mkqbtxmh"] = cleanText(itemData.location);
+        columnValues["text_mkqb4w6"] = cleanText(itemData.location);
       }
       
       // Email
       if (itemData.porterEmail) {
-        columnValues.email = { email: itemData.porterEmail, text: itemData.porterEmail };
+        columnValues["text_mkqbf1xr"] = cleanText(itemData.porterEmail);
       }
       
       // Tel
       if (itemData.phone) {
-        columnValues.phone = { phone: itemData.phone, countryShortName: "FR" };
-      }
-      
-      // Thématique (secteur)
-      if (itemData.sector) {
-        columnValues.text6 = itemData.sector;
+        columnValues["text_mkqb77mg"] = cleanText(itemData.phone);
       }
       
       // Échapper correctement les guillemets comme dans la requête curl réussie
@@ -439,7 +439,7 @@ exports.syncWithMonday = {
       
       // Préparer les données de statut
       const columnValues = {
-        status: { label: statusColumn }
+        status: { text: statusColumn }
       };
 
       // Échapper correctement les guillemets pour la chaîne JSON comme dans curl
@@ -596,23 +596,39 @@ exports.syncWithMonday = {
         }
       }
       
+      // Déterminer la région (HN/BN)
+      let region = '';
+      const normRegions = ['27', '76']; // Départements de l'ex-Haute Normandie
+      
+      if (normRegions.includes(department)) {
+        region = 'exHN';
+      } else if (department === '14' || department === '50' || department === '61') {
+        region = 'exBN';
+      } else if (department) {
+        region = 'Hors Normandie';
+      }
+      
       // Extraire la zone d'intervention
       const interventionZone = ficheIdentite.interventionZone || 
                               quiEstConcerne.geographicArea || 
                               '';
+      
+      // Extraire le numéro de téléphone
+      const phone = user.phone || ficheIdentite.contactPhone || candidature.phone || '';
       
       // Préparer les données pour Monday.com avec les champs qui fonctionnent
       const mondayData = {
         // Informations de base
         porterName: `${user.first_name} ${user.last_name}`,
         porterEmail: user.email,
-        phone: user.phone || ficheIdentite.contactPhone || '',
+        phone: phone,
         
         // Détails du projet
         shortDescription: shortDescription || projetUtiliteSociale.projectSummary || 'Pas de description',
         sector: ficheIdentite.sector || projetUtiliteSociale.sector || '',
         location: location,
         department: department,
+        region: region,
         interventionZone: interventionZone,
         
         // Métadonnées
@@ -677,5 +693,56 @@ exports.syncWithMonday = {
     };
     
     return statusMapping[status] || 'Brouillon';
+  },
+
+  /**
+   * Récupérer la structure des colonnes du tableau Monday.com
+   * @returns {Promise<Object>} Structure des colonnes
+   */
+  getBoardColumns: async function() {
+    try {
+      const apiKey = process.env.MONDAY_API_KEY;
+      const boardId = process.env.MONDAY_BOARD_ID;
+      
+      if (!apiKey || !boardId) {
+        console.warn('Configuration Monday.com manquante');
+        return null;
+      }
+      
+      const query = `
+        query {
+          boards(ids: [${parseInt(boardId)}]) {
+            columns {
+              id
+              title
+              type
+              settings_str
+            }
+          }
+        }
+      `;
+      
+      const response = await axios.post(
+        'https://api.monday.com/v2', 
+        { query }, 
+        {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': apiKey
+          }
+        }
+      );
+      
+      console.log('Structure des colonnes Monday.com:', JSON.stringify(response.data, null, 2));
+      
+      if (response.data && response.data.data && response.data.data.boards && response.data.data.boards.length > 0) {
+        return response.data.data.boards[0].columns;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la structure des colonnes:', error);
+      return null;
+    }
   },
 };
