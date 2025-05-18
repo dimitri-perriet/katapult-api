@@ -4,6 +4,7 @@ const candidatureController = require('../controllers/candidature.controller');
 const { validateRequest } = require('../middleware/validation.middleware');
 const { authenticateJWT, authorizeRoles } = require('../middleware/auth.middleware');
 const { uploadFile } = require('../middleware/file-upload');
+const path = require('path');
 
 const router = express.Router();
 
@@ -108,6 +109,9 @@ router.get('/:id/pdf', authorizeRoles(['candidat', 'admin', 'evaluateur']), asyn
     });
   }
 });
+
+// Nouvelle route pour télécharger/servir le PDF d'une candidature
+router.get('/:id/download-pdf', authorizeRoles(['candidat', 'admin', 'evaluateur']), candidatureController.downloadCandidaturePDF);
 
 // Route pour synchroniser une candidature avec Monday.com
 router.post('/:id/sync-monday', authorizeRoles(['admin']), async (req, res) => {

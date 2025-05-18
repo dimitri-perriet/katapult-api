@@ -8,6 +8,8 @@ const candidatureService = require('../services/candidature.service');
 const userService = require('../services/user.service');
 const evaluationService = require('../services/evaluation.service');
 const mondayService = require('../services/monday.service');
+const fs = require('fs');
+const path = require('path');
 
 // Créer une nouvelle candidature
 exports.createCandidature = async (req, res) => {
@@ -134,6 +136,9 @@ exports.updateCandidature = async (req, res) => {
     const updateData = {};
     let newStatusIsSoumise = false;
 
+    // Log pour req.body.metadata
+    console.log("[CTRL UPDATE] REQ.BODY.METADATA:", JSON.stringify(req.body.metadata));
+
     if (req.body.promotion) updateData.promotion = req.body.promotion;
     if (req.body.status && (userIsAdmin || req.body.status === 'soumise')) {
       updateData.status = req.body.status;
@@ -159,6 +164,11 @@ exports.updateCandidature = async (req, res) => {
     if (req.body.documents) updateData.documents_json = req.body.documents;
     if (req.body.metadata && req.body.metadata.completionPercentage !== undefined) {
       updateData.completion_percentage = req.body.metadata.completionPercentage;
+      // Log pour la valeur de completion_percentage prise en compte
+      console.log("[CTRL UPDATE] UPDATE DATA CP (from metadata):", updateData.completion_percentage);
+    } else {
+      // Log si metadata ou completionPercentage n'est pas trouvé
+      console.log("[CTRL UPDATE] PAS DE METADATA CP ou completionPercentage undefined");
     }
     if (req.body.metadata && req.body.metadata.lastSaved) {
       try {
@@ -169,6 +179,16 @@ exports.updateCandidature = async (req, res) => {
       } catch (dateError) {
         console.error(`Erreur lors de la conversion de 'lastSaved': ${dateError}`);
       }
+    }
+    
+    // Log pour req.body.completion_percentage (au cas où il serait envoyé à la racine)
+    if (req.body.completion_percentage !== undefined) {
+      console.log("[CTRL UPDATE] REQ.BODY.COMPLETION_PERCENTAGE (root):", req.body.completion_percentage);
+      // Si vous voulez que cela soit pris en compte et que ce n'est pas déjà fait via metadata:
+      // if (updateData.completion_percentage === undefined) {
+      //   updateData.completion_percentage = req.body.completion_percentage;
+      //   console.log("[CTRL UPDATE] UPDATE DATA CP (from root):", updateData.completion_percentage);
+      // }
     }
     
     // Première mise à jour (statut, date de soumission, données du formulaire)
@@ -475,7 +495,8 @@ exports.getAllCandidatures = async (req, res) => {
         createdAt: c.created_at,
         updatedAt: c.updated_at,
         submissionDate: c.submission_date,
-        completionPercentage: c.completion_percentage || 0
+        completionPercentage: c.completion_percentage || 0,
+        generated_pdf_url: c.generated_pdf_url || null
       };
     });
     
@@ -661,6 +682,55 @@ exports.addDocumentToCandidature = async (candidatureId, fileDetails, userId) =>
     return await candidatureService.getCandidatureById(candidatureId);
   } catch (error) {
     throw new Error(`Erreur lors de l'ajout du document : ${error.message}`);
+  }
+};
+
+// Nouvelle fonction pour servir le PDF d'une candidature
+exports.downloadCandidaturePDF = async (req, res) => {
+  try {
+    const candidatureId = parseInt(req.params.id, 10);
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const candidature = await candidatureService.getCandidatureById(candidatureId);
+
+    if (!candidature) {
+      return res.status(404).json({ success: false, message: 'Candidature non trouvée' });
+    }
+
+    // Contrôle d'accès
+    const isOwner = candidature.user_id === userId;
+    const isAdmin = userRole === 'admin';
+    const isEvaluator = userRole === 'evaluateur';
+
+    if (!isOwner && !isAdmin && !isEvaluator) {
+      return res.status(403).json({ success: false, message: 'Accès refusé à cette ressource' });
+    }
+
+    if (!candidature.generated_pdf_url) {
+      return res.status(404).json({ success: false, message: 'Aucun PDF généré pour cette candidature' });
+    }
+
+    // Construire le chemin absolu du PDF
+    // Le chemin stocké est relatif à la racine du projet, ex: /uploads/pdfs/fichier.pdf
+    // __dirname est le répertoire du fichier actuel (src/controllers)
+    const pdfPath = path.join(__dirname, '../../', candidature.generated_pdf_url);
+    
+    if (fs.existsSync(pdfPath)) {
+      res.contentType('application/pdf');
+      res.sendFile(pdfPath);
+    } else {
+      console.error(`Fichier PDF non trouvé sur le serveur: ${pdfPath}`);
+      return res.status(404).json({ success: false, message: 'Fichier PDF non trouvé sur le serveur.' });
+    }
+
+  } catch (error) {
+    console.error('Erreur lors du téléchargement du PDF:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la récupération du PDF',
+      error: error.message
+    });
   }
 };
 

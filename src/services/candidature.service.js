@@ -133,6 +133,11 @@ class CandidatureService {
       throw new Error('Utilisateur non trouvé');
     }
     
+    // Logs pour vérifier les données avant la création
+    console.log("[SERVICE CREATE] equipe_projet AVANT CREATE:", JSON.stringify(candidatureData.equipe_projet));
+    console.log("[SERVICE CREATE] etat_avancement AVANT CREATE:", JSON.stringify(candidatureData.etat_avancement));
+    console.log("[SERVICE CREATE] completion_percentage AVANT CREATE:", candidatureData.completion_percentage);
+
     // Créer la candidature avec la nouvelle structure JSON
     const newCandidature = await db.Candidature.create({
       user_id: userId,
@@ -182,6 +187,17 @@ class CandidatureService {
     // Préparer les données à mettre à jour
     const dataToUpdate = {};
     
+    // Logs pour vérifier les données avant la mise à jour
+    if (updateData.equipe_projet) {
+      console.log("[SERVICE UPDATE] equipe_projet DANS updateData:", JSON.stringify(updateData.equipe_projet));
+    }
+    if (updateData.etat_avancement) {
+      console.log("[SERVICE UPDATE] etat_avancement DANS updateData:", JSON.stringify(updateData.etat_avancement));
+    }
+    if (updateData.completion_percentage !== undefined) {
+      console.log("[SERVICE UPDATE] completion_percentage DANS updateData:", updateData.completion_percentage);
+    }
+
     // Mise à jour des champs simples
     if (updateData.promotion) dataToUpdate.promotion = updateData.promotion;
     if (updateData.status) dataToUpdate.status = updateData.status;
@@ -228,6 +244,17 @@ class CandidatureService {
       dataToUpdate.structure_juridique = updateData.structure_juridique;
     }
     
+    // Logs pour vérifier dataToUpdate juste avant l'appel à candidature.update()
+    if (dataToUpdate.equipe_projet) {
+      console.log("[SERVICE UPDATE] equipe_projet AVANT DB UPDATE:", JSON.stringify(dataToUpdate.equipe_projet));
+    }
+    if (dataToUpdate.etat_avancement) {
+      console.log("[SERVICE UPDATE] etat_avancement AVANT DB UPDATE:", JSON.stringify(dataToUpdate.etat_avancement));
+    }
+    if (dataToUpdate.completion_percentage !== undefined) {
+      console.log("[SERVICE UPDATE] completion_percentage AVANT DB UPDATE:", dataToUpdate.completion_percentage);
+    }
+
     // Mise à jour de la candidature
     await candidature.update(dataToUpdate);
     
