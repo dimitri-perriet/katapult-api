@@ -275,9 +275,10 @@ exports.forgotPassword = async (req, res) => {
     
     const { email } = req.body;
     
-    // Vérifier si l'utilisateur existe
+    // Utiliser un bloc try...catch séparé pour l'envoi d'email afin de pouvoir retourner
+    // le message générique même si l'email échoue, tout en loggant l'erreur d'email.
     try {
-      const user = await userService.getUserByEmail(email);
+      const user = await userService.getUserByEmail(email); // Peut lever une erreur si non trouvé
       
       // Générer un token unique
       const resetToken = crypto.randomBytes(32).toString('hex');
@@ -295,30 +296,45 @@ exports.forgotPassword = async (req, res) => {
         passwordResetExpires: expiration
       });
       
-      // Construire l'URL de réinitialisation
-      const resetURL = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
-      
-      // TODO: Envoyer un email avec le lien de réinitialisation
-      
-      res.status(200).json({
-        success: true,
-        message: 'Instructions de réinitialisation envoyées par email',
-        // DEV ONLY, supprimer en production
-        resetURL,
-        resetToken
-      });
-    } catch (error) {
-      // Ne pas divulguer si l'email existe ou non
-      res.status(200).json({
-        success: true,
-        message: 'Si cet email est associé à un compte, des instructions de réinitialisation ont été envoyées'
-      });
+      // Envoyer l'email de réinitialisation
+      try {
+        await sendPasswordResetEmail(user.email, user.first_name, resetToken);
+        
+        return res.status(200).json({
+          success: true,
+          message: 'Instructions de réinitialisation envoyées par email.'
+        });
+      } catch (emailError) {
+        console.error("Erreur lors de l'envoi de l'email de réinitialisation:", emailError);
+        // Continuer pour envoyer la réponse générique même si l'email échoue,
+        // mais on pourrait choisir une gestion différente ici (ex: retry, ou un message d'erreur plus spécifique).
+        // Pour l'instant, on retourne le message standard pour ne pas indiquer de problème spécifique à l'utilisateur.
+      }
+
+    } catch (userError) {
+      // Si l'utilisateur n'est pas trouvé (erreur de userService.getUserByEmail),
+      // ou toute autre erreur avant l'envoi de l'email.
+      // Ne pas divulguer si l'email existe ou non.
+      // On loggue l'erreur côté serveur si ce n'est pas "Utilisateur non trouvé".
+      if (userError.message !== 'Utilisateur non trouvé') {
+        console.error("Erreur dans forgotPassword avant l'envoi de l'email:", userError);
+      }
     }
+    
+    // Réponse générique si l'utilisateur n'est pas trouvé, ou si l'envoi d'email a échoué silencieusement.
+    // Cela évite de révéler si un email est enregistré ou non.
+    return res.status(200).json({
+      success: true,
+      message: 'Si cet email est associé à un compte, des instructions de réinitialisation ont été envoyées.'
+    });
+
   } catch (error) {
+    // Erreur de validation initiale ou autre erreur non prévue
+    console.error("Erreur majeure dans forgotPassword:", error);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la demande de réinitialisation',
-      error: error.message
+      error: error.message // Peut être trop verbeux pour la prod, à ajuster
     });
   }
 };

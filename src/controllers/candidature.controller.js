@@ -104,7 +104,6 @@ exports.updateCandidature = async (req, res) => {
     const candidatureId = parseInt(req.params.id, 10);
     const userId = req.user.id;
     
-    // Récupérer la candidature existante
     const existingCandidature = await candidatureService.getCandidatureById(candidatureId);
     
     if (!existingCandidature) {
@@ -114,7 +113,6 @@ exports.updateCandidature = async (req, res) => {
       });
     }
     
-    // Vérifier les autorisations
     const userIsOwner = existingCandidature.user_id === userId;
     const userIsAdmin = req.user.role === 'admin';
     
@@ -125,7 +123,6 @@ exports.updateCandidature = async (req, res) => {
       });
     }
     
-    // Vérifier si la candidature est au statut "validee", "rejetee" ou "soumise" (pour les non-admin)
     if (['validee', 'rejetee', 'soumise'].includes(existingCandidature.status) && !userIsAdmin) {
       return res.status(400).json({
         success: false,
@@ -134,97 +131,96 @@ exports.updateCandidature = async (req, res) => {
       });
     }
     
-    // Préparer les données à mettre à jour
     const updateData = {};
-    
-    // Mise à jour des champs simples
+    let newStatusIsSoumise = false;
+
     if (req.body.promotion) updateData.promotion = req.body.promotion;
-    if (req.body.status && (userIsAdmin || req.body.status === 'soumise')) updateData.status = req.body.status;
-    
-    // Si le statut passe à "soumise", mettre à jour la date de soumission
-    if (req.body.status === 'soumise' && existingCandidature.status !== 'soumise') {
-      updateData.submission_date = new Date();
+    if (req.body.status && (userIsAdmin || req.body.status === 'soumise')) {
+      updateData.status = req.body.status;
+      if (req.body.status === 'soumise' && existingCandidature.status !== 'soumise') {
+        newStatusIsSoumise = true;
+        updateData.submission_date = new Date();
+      }
     }
     
-    // Mise à jour des sections JSON
-    if (req.body.fiche_identite) {
-      updateData.fiche_identite = req.body.fiche_identite;
-    }
-    
-    if (req.body.projet_utilite_sociale) {
-      updateData.projet_utilite_sociale = req.body.projet_utilite_sociale;
-    }
-    
-    if (req.body.qui_est_concerne) {
-      updateData.qui_est_concerne = req.body.qui_est_concerne;
-    }
-    
-    if (req.body.modele_economique) {
-      updateData.modele_economique = req.body.modele_economique;
-    }
-    
-    if (req.body.parties_prenantes) {
-      updateData.parties_prenantes = req.body.parties_prenantes;
-    }
-    
+    if (req.body.fiche_identite) updateData.fiche_identite = req.body.fiche_identite;
+    if (req.body.projet_utilite_sociale) updateData.projet_utilite_sociale = req.body.projet_utilite_sociale;
+    if (req.body.qui_est_concerne) updateData.qui_est_concerne = req.body.qui_est_concerne;
+    if (req.body.modele_economique) updateData.modele_economique = req.body.modele_economique;
+    if (req.body.parties_prenantes) updateData.parties_prenantes = req.body.parties_prenantes;
     if (req.body.equipe_projet) {
       updateData.equipe_projet = req.body.equipe_projet;
       if (req.body.equipe_projet.reference && req.body.equipe_projet.reference.telephone !== undefined) {
         updateData.phone = req.body.equipe_projet.reference.telephone || '';
       }
     }
-    
-    if (req.body.structure_juridique) {
-      updateData.structure_juridique = req.body.structure_juridique;
-    }
-    
-    if (req.body.etat_avancement) {
-      updateData.etat_avancement = req.body.etat_avancement;
-    }
-    
-    if (req.body.documents) {
-      updateData.documents_json = req.body.documents;
-    }
-    
-    // Mettre à jour completion_percentage si fourni dans metadata
+    if (req.body.structure_juridique) updateData.structure_juridique = req.body.structure_juridique;
+    if (req.body.etat_avancement) updateData.etat_avancement = req.body.etat_avancement;
+    if (req.body.documents) updateData.documents_json = req.body.documents;
     if (req.body.metadata && req.body.metadata.completionPercentage !== undefined) {
       updateData.completion_percentage = req.body.metadata.completionPercentage;
     }
-
-    // Utiliser lastSaved de metadata pour updated_at si disponible
     if (req.body.metadata && req.body.metadata.lastSaved) {
       try {
         const lastSavedDate = new Date(req.body.metadata.lastSaved);
         if (!isNaN(lastSavedDate.getTime())) {
           updateData.updated_at = lastSavedDate;
-        } else {
-          console.warn(`Date 'lastSaved' invalide reçue: ${req.body.metadata.lastSaved}`);
         }
       } catch (dateError) {
         console.error(`Erreur lors de la conversion de 'lastSaved': ${dateError}`);
       }
     }
     
-    // Effectuer la mise à jour via le service
-    const updatedCandidature = await candidatureService.updateCandidature(candidatureId, updateData);
+    // Première mise à jour (statut, date de soumission, données du formulaire)
+    await candidatureService.updateCandidature(candidatureId, updateData);
     
-    // Synchroniser avec Monday.com si nécessaire
-    if (['soumise', 'en_cours_evaluation', 'validee', 'rejetee'].includes(updatedCandidature.status)) {
+    let pdfGenerationError = null;
+    if (newStatusIsSoumise) {
+      // Générer le PDF si le statut est passé à 'soumise'
       try {
+        console.log(`[updateCandidature] Statut passé à 'soumise'. Appel de exports.generateCandidaturePDF pour ${candidatureId}`);
+        await exports.generateCandidaturePDF(candidatureId, userId);
+        console.log(`[updateCandidature] PDF généré (ou tentative terminée) pour la candidature ${candidatureId}`);
+      } catch (errorGeneratingPdf) {
+        pdfGenerationError = errorGeneratingPdf;
+        console.error(`[updateCandidature] Erreur lors de la génération auto du PDF pour ${candidatureId}:`, errorGeneratingPdf.message);
+      }
+
+      // Synchroniser avec Monday.com si le statut est 'soumise' (ou d'autres statuts pertinents)
+      try {
+        console.log(`[updateCandidature] Statut 'soumise'. Tentative de synchronisation Monday.com pour ${candidatureId}`);
         await mondayService.syncWithMonday.syncCandidature(candidatureId);
+        console.log(`[updateCandidature] Synchronisation Monday.com terminée pour ${candidatureId}`);
       } catch (syncError) {
-        console.error('Erreur lors de la synchronisation avec Monday.com:', syncError);
-        // On continue même si la synchronisation échoue
+        console.error(`[updateCandidature] Erreur lors de la synchronisation Monday.com pour ${candidatureId}:`, syncError.message);
+      }
+      
+      // Envoyer une notification à l'utilisateur si le statut est passé à 'soumise'
+      try {
+        const notificationService = require('../services/notification.service');
+        await notificationService.createNotification({
+          userId: userId,
+          type: 'candidature_soumise', // Ou un type plus générique si la soumission est via update
+          message: 'Votre candidature a été soumise avec succès',
+          reference: { candidatureId: candidatureId }
+        });
+        console.log(`[updateCandidature] Notification de soumission envoyée pour ${candidatureId}`);
+      } catch (notifError) {
+        console.error(`[updateCandidature] Erreur lors de la création de la notification de soumission pour ${candidatureId}:`, notifError.message);
       }
     }
     
+    // Récupérer la version la plus à jour de la candidature, incluant potentiellement generated_pdf_url
+    const finalCandidature = await candidatureService.getCandidatureById(candidatureId, true);
+    
     return res.status(200).json({
       success: true,
-      message: 'Candidature mise à jour avec succès',
-      candidature: updatedCandidature
+      message: 'Candidature mise à jour avec succès' + 
+               (newStatusIsSoumise && pdfGenerationError ? '. Le PDF n\'a pas pu être généré automatiquement.' : ''),
+      candidature: finalCandidature
     });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la candidature:', error);
+    console.error('[updateCandidature] Erreur majeure:', error);
     return res.status(500).json({
       success: false,
       message: 'Erreur lors de la mise à jour de la candidature',
@@ -244,62 +240,68 @@ exports.submitCandidature = async (req, res) => {
     const candidatureId = parseInt(req.params.id, 10);
     const userId = req.user.id;
     
-    // Récupérer la candidature
-    const candidature = await candidatureService.getCandidatureById(candidatureId);
+    const candidatureDetails = await candidatureService.getCandidatureById(candidatureId);
     
-    if (!candidature) {
+    if (!candidatureDetails) {
       return res.status(404).json({
         success: false,
         message: 'Candidature non trouvée'
       });
     }
     
-    // Vérifier si l'utilisateur est le propriétaire
-    if (candidature.user_id !== userId) {
+    if (candidatureDetails.user_id !== userId) {
       return res.status(403).json({
         success: false,
-        message: 'Vous n\'êtes pas autorisé à soumettre cette candidature'
+        message: "Vous n'êtes pas autorisé à soumettre cette candidature"
       });
     }
     
-    // Vérifier si la candidature est au statut brouillon
-    if (candidature.status !== 'brouillon') {
+    if (candidatureDetails.status !== 'brouillon') {
       return res.status(400).json({
         success: false,
         message: 'Cette candidature a déjà été soumise ou traitée'
       });
     }
     
-    // Vérifier si le pourcentage de complétion est suffisant (par exemple > 90%)
-    const requiredPercentage = 90;
-    if (!candidature.completion_percentage || candidature.completion_percentage <= requiredPercentage) {
+    const requiredPercentage = parseInt(process.env.MIN_COMPLETION_PERCENTAGE_SUBMIT) || 90;
+    if (!candidatureDetails.completion_percentage || candidatureDetails.completion_percentage < requiredPercentage) {
       return res.status(400).json({
         success: false,
         message: `Vous devez atteindre au moins ${requiredPercentage}% de complétion pour soumettre votre candidature.`,
-        completionPercentage: candidature.completion_percentage || 0
+        completionPercentage: candidatureDetails.completion_percentage || 0
       });
     }
     
-    // Mettre à jour le statut et la date de soumission
     const updateData = {
       status: 'soumise',
       submission_date: new Date()
     };
     
-    // Effectuer la mise à jour
-    const updatedCandidature = await candidatureService.updateCandidature(candidatureId, updateData);
+    const updatedCandidatureFromService = await candidatureService.updateCandidature(candidatureId, updateData);
+
+    // Générer le PDF après la soumission réussie
+    let pdfGenerationError = null;
+    try {
+      console.log(`[submitCandidature] Appel de exports.generateCandidaturePDF pour ${candidatureId}`);
+      await exports.generateCandidaturePDF(candidatureId, userId); // Appel à la fonction wrapper définie ci-dessus
+      console.log(`[submitCandidature] PDF généré (ou tentative terminée) pour la candidature ${candidatureId}`);
+    } catch (errorGeneratingPdf) {
+      pdfGenerationError = errorGeneratingPdf; // Sauvegarder l'erreur pour la logger plus tard si besoin
+      console.error(`[submitCandidature] Erreur lors de la génération automatique du PDF pour la candidature ${candidatureId}:`, errorGeneratingPdf.message);
+      // On ne bloque pas la réponse de soumission pour une erreur de PDF
+    }
     
     // Synchroniser avec Monday.com
     try {
       await mondayService.syncWithMonday.syncCandidature(candidatureId);
     } catch (syncError) {
-      console.error('Erreur lors de la synchronisation avec Monday.com:', syncError);
+      console.error('[submitCandidature] Erreur lors de la synchronisation avec Monday.com:', syncError.message);
       // On continue même si la synchronisation échoue
     }
     
     // Envoyer une notification à l'utilisateur
     try {
-      const notificationService = require('../services/notification.service');
+      const notificationService = require('../services/notification.service'); // require ici pour éviter dépendance cyclique potentielle
       await notificationService.createNotification({
         userId: userId,
         type: 'candidature_soumise',
@@ -309,17 +311,19 @@ exports.submitCandidature = async (req, res) => {
         }
       });
     } catch (notifError) {
-      console.error('Erreur lors de la création de la notification:', notifError);
-      // On continue même si la notification échoue
+      console.error('[submitCandidature] Erreur lors de la création de la notification:', notifError.message);
     }
     
+    // Récupérer la version la plus à jour de la candidature, incluant potentiellement generated_pdf_url
+    const finalCandidature = await candidatureService.getCandidatureById(candidatureId, true);
+
     return res.status(200).json({
       success: true,
-      message: 'Candidature soumise avec succès',
-      candidature: updatedCandidature
+      message: 'Candidature soumise avec succès' + (pdfGenerationError ? '. Le PDF n\'a pas pu être généré automatiquement.' : ''),
+      candidature: finalCandidature // Renvoyer la version la plus à jour
     });
   } catch (error) {
-    console.error('Erreur lors de la soumission de la candidature:', error);
+    console.error('[submitCandidature] Erreur lors de la soumission de la candidature:', error);
     return res.status(500).json({
       success: false,
       message: 'Erreur lors de la soumission de la candidature',
@@ -660,41 +664,39 @@ exports.addDocumentToCandidature = async (candidatureId, fileDetails, userId) =>
   }
 };
 
-// Générer un PDF à partir d'une candidature
-exports.generateCandidaturePDF = async (candidatureId, userId) => {
+// Fonction wrapper pour la génération de PDF
+exports.generateCandidaturePDF = async (candidatureId, userIdMakingRequest) => {
   try {
-    // Récupérer la candidature avec les détails de l'utilisateur via le service
-    const candidature = await candidatureService.getCandidatureById(parseInt(candidatureId, 10), true);
+    console.log(`[PDF Controller] Début de la génération PDF pour la candidature ${candidatureId}`);
+    
+    // Récupérer toutes les données de la candidature, y compris les associations
+    const candidature = await candidatureService.getCandidatureById(candidatureId, true); 
     
     if (!candidature) {
-      throw new Error('Candidature non trouvée');
+      console.error(`[PDF Controller] Candidature ${candidatureId} non trouvée pour la génération du PDF.`);
+      // Ne pas throw ici pour permettre au flux principal de continuer, mais l'erreur est loggée.
+      // Le service pdf-generator lui-même pourrait aussi gérer le cas d'une candidature null.
+      return null; 
     }
+
+    // Optionnel : Vérification des droits (peut être déjà fait en amont)
+    // if (candidature.user_id !== userIdMakingRequest && !isUserAdmin(userIdMakingRequest)) { // isUserAdmin serait une fonction à implémenter
+    //   console.warn(`[PDF Controller] Tentative non autorisée de génération de PDF pour la candidature ${candidatureId} par l'utilisateur ${userIdMakingRequest}`);
+    //   return null;
+    // }
     
-    // Vérifier les permissions
-    const isOwner = candidature.user_id === userId;
+    // Appel à la fonction generatePDF du module pdf-generator
+    // Cette fonction generatePDF (dans pdf-generator.js) est maintenant responsable 
+    // de la création du fichier ET de la mise à jour de la BDD avec generated_pdf_url.
+    const pdfPath = await generatePDF(candidature); 
     
-    // Récupérer l'utilisateur via le service
-    const userService = require('../services/user.service');
-    const user = await userService.getUserById(userId);
-    const isAdminOrEvaluator = ['admin', 'evaluateur'].includes(user.role);
-    
-    if (!isOwner && !isAdminOrEvaluator) {
-      throw new Error('Vous n\'êtes pas autorisé à générer un PDF pour cette candidature');
-    }
-    
-    // Générer le PDF
-    const pdfPath = await generatePDF(candidature);
-    
-    // Si c'est généré automatiquement par le système, mettre à jour l'URL du PDF
-    if (!candidature.generated_pdf_url) {
-      await candidatureService.updateCandidature(candidatureId, {
-        generated_pdf_url: pdfPath
-      });
-    }
-    
-    return pdfPath;
+    console.log(`[PDF Controller] PDF pour la candidature ${candidatureId} traité par pdf-generator. Chemin retourné: ${pdfPath}`);
+    return pdfPath; // Le chemin est retourné mais le contrôleur principal ne l'utilise pas directement.
+
   } catch (error) {
-    throw new Error(`Erreur lors de la génération du PDF : ${error.message}`);
+    console.error(`[PDF Controller] Erreur majeure dans generateCandidaturePDF pour la candidature ${candidatureId}:`, error);
+    // Il est important que cette erreur soit propagée ou gérée pour que le try/catch dans submitCandidature la voie
+    throw error; 
   }
 };
 
