@@ -1,5 +1,6 @@
 const db = require('../../models');
 const mondayService = require('./monday.service'); // Ajout de l'import du service Monday
+const emailService = require('./email.service'); // Ajout de l'import du service Email
 
 const { Op } = require('sequelize');
 
@@ -139,7 +140,7 @@ class CandidatureService {
     console.log("[SERVICE CREATE] completion_percentage AVANT CREATE:", candidatureData.completion_percentage);
 
     // Créer la candidature avec la nouvelle structure JSON
-    const newCandidature = await db.Candidature.create({
+    const newCandidatureData = {
       user_id: userId,
       promotion: candidatureData.promotion,
       phone: candidatureData.phone || '',
@@ -154,7 +155,14 @@ class CandidatureService {
       etat_avancement: candidatureData.etat_avancement || {},
       structure_juridique: candidatureData.structure_juridique || {},
       status: candidatureData.status || 'brouillon'
-    });
+    };
+    
+    // Si le statut est 'soumise' lors de la création, ajouter la date de soumission
+    if (newCandidatureData.status === 'soumise' && !newCandidatureData.submission_date) {
+        newCandidatureData.submission_date = new Date();
+    }
+
+    const newCandidature = await db.Candidature.create(newCandidatureData);
     
     // Si la candidature possède des membres d'équipe dans l'ancienne structure, les créer
     if (candidatureData.teamMembers && candidatureData.teamMembers.length > 0) {
@@ -168,6 +176,21 @@ class CandidatureService {
       await db.ProjectTeam.bulkCreate(teamMembersToCreate);
     }
     
+    // Envoi de l'email de confirmation si la candidature est soumise directement
+    if (newCandidature.status === 'soumise') {
+      const emailData = {
+        firstName: user.first_name,
+        lastName: user.last_name,
+        applicationName: newCandidature.fiche_identite?.projectName || 'Votre projet',
+        applicationStatus: 'Soumise',
+        applicationLink: `${process.env.FRONTEND_URL}/candidatures/${newCandidature.id}`,
+        submissionDate: newCandidature.submission_date ? newCandidature.submission_date.toLocaleDateString('fr-FR') : 'N/A',
+        apiBaseUrl: process.env.API_BASE_URL
+      };
+      emailService.sendEmailFromTemplate(user.email, 'submission_confirmation', emailData)
+        .catch(err => console.error('Failed to send submission confirmation email:', err));
+    }
+    
     return this.getCandidatureById(newCandidature.id, true);
   }
   
@@ -175,14 +198,20 @@ class CandidatureService {
    * Mettre à jour une candidature
    * @param {number} candidatureId - ID de la candidature
    * @param {Object} updateData - Données à mettre à jour
+   * @param {Object} [currentUser] - Informations sur l'utilisateur effectuant la mise à jour (optionnel, pour logs ou droits)
    * @returns {Promise<Object>} Candidature mise à jour
    */
-  async updateCandidature(candidatureId, updateData) {
-    const candidature = await db.Candidature.findByPk(candidatureId);
+  async updateCandidature(candidatureId, updateData, currentUser) {
+    const candidature = await db.Candidature.findByPk(candidatureId, {
+      include: [{ model: db.User, as: 'user', attributes: ['id', 'email', 'first_name', 'last_name'] }]
+    });
     
     if (!candidature) {
       throw new Error('Candidature non trouvée');
     }
+
+    const oldStatus = candidature.status;
+    const newStatus = updateData.status;
     
     // Préparer les données à mettre à jour
     const dataToUpdate = {};
@@ -201,7 +230,12 @@ class CandidatureService {
     // Mise à jour des champs simples
     if (updateData.promotion) dataToUpdate.promotion = updateData.promotion;
     if (updateData.status) dataToUpdate.status = updateData.status;
-    if (updateData.submission_date) dataToUpdate.submission_date = updateData.submission_date;
+    // Si le statut passe à 'soumise' et qu'il n'y a pas de date de soumission, l'ajouter
+    if (newStatus === 'soumise' && oldStatus !== 'soumise' && !candidature.submission_date && !updateData.submission_date) {
+        dataToUpdate.submission_date = new Date();
+    } else if (updateData.submission_date) {
+        dataToUpdate.submission_date = updateData.submission_date;
+    }
     if (updateData.monday_item_id) dataToUpdate.monday_item_id = updateData.monday_item_id;
     if (updateData.generated_pdf_url) dataToUpdate.generated_pdf_url = updateData.generated_pdf_url;
     if (updateData.phone !== undefined) dataToUpdate.phone = updateData.phone;
@@ -257,6 +291,7 @@ class CandidatureService {
 
     // Mise à jour de la candidature
     await candidature.update(dataToUpdate);
+    await candidature.reload(); // Recharger pour avoir les dernières données, y compris l'utilisateur
     
     // Mise à jour des membres de l'équipe si fournis dans l'ancienne structure
     if (updateData.teamMembers) {
@@ -276,19 +311,53 @@ class CandidatureService {
       }
     }
     
-    // Si le statut a changé, synchroniser avec Monday.com
-    const updatedCandidature = await this.getCandidatureById(candidatureId, true);
-    
-    // Si le statut est passé à soumise, acceptee ou rejetee, synchroniser avec Monday.com
-    if (updateData.status && ['soumise', 'en_evaluation', 'acceptee', 'rejetee', 'présélectionnée'].includes(updateData.status)) {
-      try {
-        console.log(`Synchronisation de la candidature ${candidatureId} avec Monday.com - Statut: ${updateData.status}`);
-        await this.syncCandidatureWithMonday(candidatureId);
-      } catch (error) {
-        console.error(`Erreur lors de la synchronisation de la candidature ${candidatureId} avec Monday.com:`, error);
-        // On continue même si la synchronisation échoue
+    // Envoi de l'email de changement de statut
+    if (newStatus && newStatus !== oldStatus) {
+      let templateName = null;
+      let statusLabel = newStatus; // Pour l'email
+
+      switch (newStatus) {
+        case 'soumise':
+          templateName = 'application_status_submitted'; // Utilisé si le statut change vers soumise APRES création
+          statusLabel = 'Soumise';
+          break;
+        case 'en_evaluation':
+          templateName = 'application_status_review';
+          statusLabel = 'En cours d\'évaluation';
+          break;
+        case 'acceptee':
+          templateName = 'application_status_accepted';
+          statusLabel = 'Acceptée';
+          break;
+        case 'rejetee':
+          templateName = 'application_status_rejected';
+          statusLabel = 'Rejetée';
+          break;
+        case 'brouillon':
+          templateName = 'application_status_draft_return'; // Renvoyée en brouillon
+          statusLabel = 'Renvoyée en brouillon';
+          break;
+        // Ajoutez d'autres statuts si nécessaire
+      }
+
+      if (templateName && candidature.user) {
+        const emailData = {
+          firstName: candidature.user.first_name,
+          lastName: candidature.user.last_name,
+          applicationName: candidature.fiche_identite?.projectName || 'Votre projet',
+          applicationStatus: statusLabel,
+          applicationLink: `${process.env.FRONTEND_URL}/candidatures/${candidature.id}`,
+          submissionDate: candidature.submission_date ? candidature.submission_date.toLocaleDateString('fr-FR') : '',
+          adminNotes: updateData.adminNotes || '',
+          apiBaseUrl: process.env.API_BASE_URL
+        };
+        emailService.sendEmailFromTemplate(candidature.user.email, templateName, emailData)
+          .catch(err => console.error(`Failed to send status change email for template ${templateName}:`, err));
       }
     }
+    
+    // Si le statut a changé, synchroniser avec Monday.com
+    const updatedCandidature = await this.syncCandidatureWithMonday(candidatureId);
     
     return updatedCandidature;
   }

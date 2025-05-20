@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
+const path = require('path');
 require('dotenv').config();
 
 // Import des routes
@@ -10,9 +11,14 @@ const candidatureRoutes = require('./routes/candidature.routes');
 const evaluationRoutes = require('./routes/evaluation.routes');
 const userRoutes = require('./routes/user.routes');
 const mondayRoutes = require('./routes/monday.routes');
+const emailTemplateRoutes = require('./routes/emailTemplate.routes');
 
 // Initialisation de l'application Express
 const app = express();
+
+// Servir les fichiers statiques du dossier 'public'
+// Le chemin est relatif à l'emplacement de app.js (dans src/), donc ../public pour remonter d'un niveau
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Middlewares
 app.use(cors());
@@ -46,6 +52,7 @@ apiRouter.use('/api/candidatures', candidatureRoutes);
 apiRouter.use('/api/evaluations', evaluationRoutes);
 apiRouter.use('/api/users', userRoutes);
 apiRouter.use('/api/monday', mondayRoutes);
+apiRouter.use('/api/email-templates', emailTemplateRoutes);
 
 // Route de base
 apiRouter.get('/', (req, res) => {
