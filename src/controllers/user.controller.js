@@ -390,4 +390,74 @@ exports.getUserCandidatures = async (req, res) => {
       error: error.message
     });
   }
-}; 
+};
+
+// Exporter les utilisateurs en CSV (admin seulement)
+exports.exportUsersToCSV = async (req, res) => {
+  try {
+    // Récupérer tous les utilisateurs. 
+    // userService.getAllUsers exclut déjà le mot de passe.
+    const users = await userService.getAllUsers({}); 
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Aucun utilisateur à exporter',
+      });
+    }
+
+    // Définir les en-têtes CSV
+    const csvHeaders = [
+      'ID', 'Prénom', 'Nom', 'Email', 'Rôle', 'Téléphone',
+      'Rue', 'Ville', 'Code Postal', 'Pays',
+      'Notification Email', 'Notification App', 'Photo de Profil URL',
+      'Est Actif', 'Date de création', 'Date de mise à jour', 'Dernière connexion'
+    ];
+    
+    // Préparer les données CSV
+    const csvRows = users.map(user => [
+      user.id,
+      user.first_name || '', // Corrigé pour utiliser snake_case
+      user.last_name || '',  // Corrigé pour utiliser snake_case
+      user.email || '',
+      user.role || '',
+      user.phone || '',
+      user.street || '',
+      user.city || '',
+      user.postal_code || '',
+      user.country || '',
+      user.notification_email, // Devrait être un booléen, le CSV le gérera
+      user.notification_app,   // Idem
+      user.profile_picture || '',
+      user.is_active,          // Idem pour booléen
+      user.created_at ? new Date(user.created_at).toLocaleString('fr-FR') : '', // Format avec heure
+      user.updated_at ? new Date(user.updated_at).toLocaleString('fr-FR') : '', // Format avec heure
+      user.last_login ? new Date(user.last_login).toLocaleString('fr-FR') : ''  // Format avec heure
+    ]);
+
+    // Construire la chaîne CSV
+    let csvContent = csvHeaders.join(',') + '\n';
+    csvRows.forEach(row => {
+      csvContent += row.map(field => {
+        const stringField = String(field === null || typeof field === 'undefined' ? '' : field);
+        // Échapper les guillemets en les doublant, et entourer de guillemets si le champ contient une virgule, un guillemet ou un retour à la ligne.
+        if (stringField.includes('"') || stringField.includes(',') || stringField.includes('\n')) {
+          return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+      }).join(',') + '\n';
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
+    res.status(200).send(Buffer.from(csvContent, 'utf-8')); // S'assurer de l'encodage UTF-8 pour les caractères spéciaux
+
+  } catch (error) {
+    console.error('Erreur lors de l\'exportation des utilisateurs en CSV:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de l\'exportation des utilisateurs',
+      error: error.message,
+    });
+  }
+};

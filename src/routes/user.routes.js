@@ -83,4 +83,11 @@ router.delete(
   userController.deleteUser
 );
 
+// Nouvelle route pour exporter les utilisateurs en CSV (admin seulement)
+router.get(
+  '/export/csv',
+  authorizeRoles(['admin']),
+  userController.exportUsersToCSV
+);
+
 module.exports = router; 
