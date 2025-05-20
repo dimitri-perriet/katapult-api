@@ -142,7 +142,7 @@ class CandidatureService {
     // Créer la candidature avec la nouvelle structure JSON
     const newCandidatureData = {
       user_id: userId,
-      promotion: candidatureData.promotion,
+      promotion: new Date().getFullYear().toString(),
       phone: candidatureData.phone || '',
       fiche_identite: candidatureData.fiche_identite,
       projet_utilite_sociale: candidatureData.projet_utilite_sociale,
@@ -181,7 +181,7 @@ class CandidatureService {
       const emailData = {
         firstName: user.first_name,
         lastName: user.last_name,
-        applicationName: newCandidature.fiche_identite?.projectName || 'Votre projet',
+        applicationName: newCandidature.fiche_identite.projectName || 'Votre projet',
         applicationStatus: 'Soumise',
         applicationLink: `${process.env.FRONTEND_URL}/candidatures/${newCandidature.id}`,
         submissionDate: newCandidature.submission_date ? newCandidature.submission_date.toLocaleDateString('fr-FR') : 'N/A',
@@ -228,7 +228,6 @@ class CandidatureService {
     }
 
     // Mise à jour des champs simples
-    if (updateData.promotion) dataToUpdate.promotion = updateData.promotion;
     if (updateData.status) dataToUpdate.status = updateData.status;
     // Si le statut passe à 'soumise' et qu'il n'y a pas de date de soumission, l'ajouter
     if (newStatus === 'soumise' && oldStatus !== 'soumise' && !candidature.submission_date && !updateData.submission_date) {
@@ -344,7 +343,7 @@ class CandidatureService {
         const emailData = {
           firstName: candidature.user.first_name,
           lastName: candidature.user.last_name,
-          applicationName: candidature.fiche_identite?.projectName || 'Votre projet',
+          applicationName: candidature.fiche_identite.projectName || 'Votre projet',
           applicationStatus: statusLabel,
           applicationLink: `${process.env.FRONTEND_URL}/candidatures/${candidature.id}`,
           submissionDate: candidature.submission_date ? candidature.submission_date.toLocaleDateString('fr-FR') : '',

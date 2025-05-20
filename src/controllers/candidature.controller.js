@@ -28,15 +28,18 @@ exports.createCandidature = async (req, res) => {
       ? existingCandidatures.candidatures
       : (Array.isArray(existingCandidatures) ? existingCandidatures : []);
     
-    const activeCandidature = candidaturesArray.find(c => 
-      c.status !== 'rejetee'
+    const currentYear = new Date().getFullYear().toString();
+    const blockingCandidature = candidaturesArray.find(c => 
+      c.status !== 'rejetee' &&
+      c.status !== 'acceptee' && // Permettre si la candidature existante est acceptée
+      c.promotion === currentYear   // Bloquer uniquement si la promotion est l'année actuelle
     );
     
-    if (activeCandidature) {
+    if (blockingCandidature) {
       return res.status(400).json({
         success: false,
-        message: 'Vous avez déjà une candidature active. Vous ne pouvez pas en créer une nouvelle.',
-        candidatureId: activeCandidature.id
+        message: 'Vous avez déjà une candidature pour la promotion ' + currentYear + ' qui n\'est ni acceptée ni rejetée. Vous ne pouvez pas en créer une nouvelle tant que celle-ci est active.',
+        candidatureId: blockingCandidature.id
       });
     }
     
