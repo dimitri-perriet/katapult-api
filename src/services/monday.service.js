@@ -162,13 +162,13 @@ exports.syncWithMonday = {
         };
       } else if (response.data && response.data.errors) {
         console.error('Erreurs GraphQL lors de la création dans Monday.com:', JSON.stringify(response.data.errors));
-        throw new Error(`Erreur GraphQL: ${JSON.stringify(response.data.errors)}`);
+        //throw new Error(`Erreur GraphQL: ${JSON.stringify(response.data.errors)}`);
       }
       
-      throw new Error('Échec de la création de l\'item dans Monday.com - réponse inattendue');
+      //throw new Error('Échec de la création de l\'item dans Monday.com - réponse inattendue');
     } catch (error) {
       console.error('Erreur lors de la création de l\'item dans Monday.com:', error);
-      throw error;
+      //throw error;
     }
   },
   

@@ -73,15 +73,15 @@ exports.createCandidature = async (req, res) => {
     // Créer la candidature en utilisant le service
     const candidature = await candidatureService.createCandidature(candidatureData, userId);
     
-    // Synchroniser avec Monday.com (optionnel)
-    try {
-      if (candidature && candidature.id) {
-        await mondayService.syncWithMonday.syncCandidature(candidature.id);
-      }
-    } catch (syncError) {
-      console.error('Erreur lors de la synchronisation avec Monday.com:', syncError);
-      // On ne renvoie pas d'erreur même si la synchronisation échoue
-    }
+    // // Synchroniser avec Monday.com (optionnel)
+    // try {
+    //   if (candidature && candidature.id) {
+    //     await mondayService.syncWithMonday.syncCandidature(candidature.id);
+    //   }
+    // } catch (syncError) {
+    //   console.error('Erreur lors de la synchronisation avec Monday.com:', syncError);
+    //   // On ne renvoie pas d'erreur même si la synchronisation échoue
+    // }
     
     return res.status(201).json({
       success: true,
@@ -209,14 +209,14 @@ exports.updateCandidature = async (req, res) => {
         console.error(`[updateCandidature] Erreur lors de la génération auto du PDF pour ${candidatureId}:`, errorGeneratingPdf.message);
       }
 
-      // Synchroniser avec Monday.com si le statut est 'soumise' (ou d'autres statuts pertinents)
-      try {
-        console.log(`[updateCandidature] Statut 'soumise'. Tentative de synchronisation Monday.com pour ${candidatureId}`);
-        await mondayService.syncWithMonday.syncCandidature(candidatureId);
-        console.log(`[updateCandidature] Synchronisation Monday.com terminée pour ${candidatureId}`);
-      } catch (syncError) {
-        console.error(`[updateCandidature] Erreur lors de la synchronisation Monday.com pour ${candidatureId}:`, syncError.message);
-      }
+      // // Synchroniser avec Monday.com si le statut est 'soumise' (ou d'autres statuts pertinents)
+      // try {
+      //   console.log(`[updateCandidature] Statut 'soumise'. Tentative de synchronisation Monday.com pour ${candidatureId}`);
+      //   await mondayService.syncWithMonday.syncCandidature(candidatureId);
+      //   console.log(`[updateCandidature] Synchronisation Monday.com terminée pour ${candidatureId}`);
+      // } catch (syncError) {
+      //   console.error(`[updateCandidature] Erreur lors de la synchronisation Monday.com pour ${candidatureId}:`, syncError.message);
+      // }
       
       // Envoyer une notification à l'utilisateur si le statut est passé à 'soumise'
       try {
@@ -314,13 +314,13 @@ exports.submitCandidature = async (req, res) => {
       // On ne bloque pas la réponse de soumission pour une erreur de PDF
     }
     
-    // Synchroniser avec Monday.com
-    try {
-      await mondayService.syncWithMonday.syncCandidature(candidatureId);
-    } catch (syncError) {
-      console.error('[submitCandidature] Erreur lors de la synchronisation avec Monday.com:', syncError.message);
-      // On continue même si la synchronisation échoue
-    }
+    // // Synchroniser avec Monday.com
+    // try {
+    //   await mondayService.syncWithMonday.syncCandidature(candidatureId);
+    // } catch (syncError) {
+    //   console.error('[submitCandidature] Erreur lors de la synchronisation avec Monday.com:', syncError.message);
+    //   // On continue même si la synchronisation échoue
+    // }
     
     // Envoyer une notification à l'utilisateur
     try {
@@ -790,6 +790,6 @@ exports.syncWithMonday = async (candidatureId) => {
     return await mondayService.syncWithMonday.syncCandidature(candidatureId);
     
   } catch (error) {
-    throw new Error(`Erreur lors de la synchronisation avec Monday.com : ${error.message}`);
+    //throw new Error(`Erreur lors de la synchronisation avec Monday.com : ${error.message}`);
   }
 };
