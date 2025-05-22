@@ -330,7 +330,7 @@ class CandidatureService {
           break;
         case 'rejetee':
           templateName = 'application_status_rejected';
-          statusLabel = 'Rejetée';
+          statusLabel = 'Non retenue';
           break;
         case 'brouillon':
           templateName = 'application_status_draft_return'; // Renvoyée en brouillon
