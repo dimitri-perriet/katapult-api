@@ -26,7 +26,7 @@ const preSelectValidation = [
 
 // Validation pour la décision finale
 const finalDecisionValidation = [
-  body('decision').isIn(['acceptée', 'refusée']).withMessage('La décision doit être "acceptée" ou "refusée"'),
+  body('decision').isIn(['acceptée', 'refusée']).withMessage('La décision doit être "acceptée" ou "non retenue"'),
 ];
 
 // Routes pour les évaluateurs et admins

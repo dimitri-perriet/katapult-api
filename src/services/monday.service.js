@@ -689,7 +689,7 @@ exports.syncWithMonday = {
       'soumise': 'Soumise',
       'en_cours_evaluation': 'En cours d\'évaluation',
       'validee': 'Validée',
-      'rejetee': 'Rejetée'
+      'rejetee': 'Non retenue'
     };
     
     return statusMapping[status] || 'Brouillon';

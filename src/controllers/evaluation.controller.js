@@ -438,10 +438,10 @@ exports.finalDecision = async (req, res) => {
     }
     
     // Vérifier si la décision est valide
-    if (!['acceptée', 'refusée'].includes(decision)) {
+    if (!['acceptée', 'non_retenue'].includes(decision)) {
       return res.status(400).json({
         success: false,
-        message: 'Décision invalide, doit être "acceptée" ou "refusée"',
+        message: 'Décision invalide, doit être "acceptée" ou "non retenue"',
       });
     }
     

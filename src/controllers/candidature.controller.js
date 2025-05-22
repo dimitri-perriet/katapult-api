@@ -38,7 +38,7 @@ exports.createCandidature = async (req, res) => {
     if (blockingCandidature) {
       return res.status(400).json({
         success: false,
-        message: 'Vous avez déjà une candidature pour la promotion ' + currentYear + ' qui n\'est ni acceptée ni rejetée. Vous ne pouvez pas en créer une nouvelle tant que celle-ci est active.',
+        message: 'Vous avez déjà une candidature pour la promotion ' + currentYear + ' qui n\'est ni acceptée ni retenue. Vous ne pouvez pas en créer une nouvelle tant que celle-ci est active.',
         candidatureId: blockingCandidature.id
       });
     }
