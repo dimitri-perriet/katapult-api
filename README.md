@@ -101,6 +101,43 @@ katapult-api/
 - `POST /api/monday/webhook` - Configurer un webhook Monday
 - `GET /api/monday/status` - Vérifier le statut de connexion à Monday
 
+# Configuration de l'API Monday.com
+
+## Récupération des clés d'API
+
+### Monday API Key
+
+1. Connectez-vous à votre compte Monday.com
+2. Accédez à la page de gestion des tokens : [https://hommetmilans-team.monday.com/apps/manage/tokens](https://hommetmilans-team.monday.com/apps/manage/tokens)
+3. Créez un nouveau token ou copiez un token existant
+4. Ce token sera utilisé comme `MONDAY_API_KEY` dans votre configuration
+
+### Board ID
+
+1. Ouvrez votre tableau Monday.com
+2. Le Board ID se trouve dans l'URL du tableau
+    - Exemple : [https://hommetmilans-team.monday.com/boards/1930650794](https://hommetmilans-team.monday.com/boards/1930650794)
+    - Dans cet exemple, `1930650794` est le Board ID
+3. Ce numéro sera utilisé comme `MONDAY_BOARD_ID` dans votre configuration
+
+## Configuration dans l'application
+
+Ajoutez ces variables dans votre fichier `.env` :
+
+```env
+MONDAY_API_KEY=votre_token_api
+MONDAY_BOARD_ID=votre_board_id
+MONDAY_API_URL=https://api.monday.com/v2
+```
+
+## Vérification de la configuration
+
+Pour vérifier que votre configuration est correcte, vous pouvez :
+
+1. Vérifier que les variables d'environnement sont bien chargées
+2. Tester la connexion à l'API Monday.com
+3. Vérifier que vous avez accès au tableau spécifié
+
 ## Licence
 
 ISC 
